@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
-<title>粉粉贪吃蛇·小悠特别版 (v6.16·BGM整合)</title>
+<title>粉粉贪吃蛇·小悠特别版 (v6.17 稳定修复)</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#ffd6e6">
 <style>
@@ -207,27 +207,22 @@
 <audio id="bgm" src="friendship.mp3" preload="auto" loop playsinline></audio>
 
 <script>
-  // Service Worker 注册 + iOS 视口修正
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('service-worker.js').catch(()=>{});
-  }
+  // SW 注册 + iOS 视口修正
+  if ('serviceWorker' in navigator) { navigator.serviceWorker.register('service-worker.js').catch(()=>{}); }
   (function(){
     function setVH(){const vv=window.visualViewport;const h=(vv?vv.height:window.innerHeight);document.documentElement.style.setProperty('--vh',(h/100)+'px');}
-    setVH(); window.addEventListener('resize',setVH); if(window.visualViewport){window.visualViewport.addEventListener('resize',setVH);}
+    setVH(); addEventListener('resize',setVH); if(window.visualViewport){visualViewport.addEventListener('resize',setVH);}
   })();
 </script>
 
 <script>
 (function(){ 'use strict';
-  const PRESETS={'30x22':[30,22],'26x18':[26,18],'22x16':[22,16]};
-  let presetKey='26x18'; let W=26,H=18; let TILEPX=22;
-
+  /* ---------- DOM ---------- */
   const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
   const conf=document.getElementById('confetti'), cctx=conf.getContext('2d');
   const hudScore=document.getElementById('score'), hudLevel=document.getElementById('level'), hudSpeed=document.getElementById('speed');
   const msg=document.getElementById('msg'), banner=document.getElementById('banner'), winEl=document.getElementById('win');
-  const panelMask=document.getElementById('panelMask'), panel=document.getElementById('panel'); const skinsWrap=document.getElementById('skins');
-
+  const panelMask=document.getElementById('panelMask'), panel=document.getElementById('panel'), skinsWrap=document.getElementById('skins');
   const ctlRange=document.getElementById('ctlRange'), ctlVal=document.getElementById('ctlVal');
   const liftRange=document.getElementById('liftRange'), liftVal=document.getElementById('liftVal');
   const padRange=document.getElementById('padRange'), padVal=document.getElementById('padVal');
@@ -238,45 +233,44 @@
   const levelModeSel=document.getElementById('levelMode');
   const tsRange=document.getElementById('tsRange'), tsVal=document.getElementById('tsVal');
   const boardPresetSel=document.getElementById('boardPreset');
-
   const confettiNSlider=document.getElementById('confettiN');
   const confettiTSlider=document.getElementById('confettiT'), confettiTVal=document.getElementById('confettiTVal');
-
   const rewardModeSel=document.getElementById('rewardMode');
   const rewardPointsRow=document.getElementById('rewardPointsRow');
   const rewardPointsSlider=document.getElementById('rewardPoints'), rewardVal=document.getElementById('rewardVal');
-
-  const startMask=document.getElementById('startMask');
-  const startBtn=document.getElementById('startBtn');
+  const startMask=document.getElementById('startMask'), startBtn=document.getElementById('startBtn');
+  const sfxBtn=document.getElementById('sfx'), bgmBtn=document.getElementById('bgmToggle');
   const bgmEl=document.getElementById('bgm');
 
-  const savedRaw=localStorage.getItem('xy_snake_settings'); const saved=savedRaw?JSON.parse(savedRaw):null;
-  function setVar(n,v){document.documentElement.style.setProperty(n,v);}
-  if(saved){
-    if(saved.controlsH!=null){setVar('--controlsH',saved.controlsH); ctlRange.value=saved.controlsH; ctlVal.textContent=saved.controlsH;}
-    if(saved.controlsLift!=null){setVar('--controlsLift',saved.controlsLift); liftRange.value=saved.controlsLift; liftVal.textContent=saved.controlsLift;}
-    if(saved.actionsPadRight!=null){setVar('--actionsPadRight',saved.actionsPadRight); padRange.value=saved.actionsPadRight; padVal.textContent=saved.actionsPadRight;}
-  }
-  let startSpeed=(saved&&saved.startSpeed!=null)?parseFloat(saved.startSpeed):7;
-  let sfxOn=!(saved&&saved.sfxOn===false);
-  let bgmOn=!(saved&&saved.bgmOn===false);
-  let wallMode=(saved&&saved.wallMode)||'wrap';
-  let foodStyle=(saved&&saved.foodStyle)||'pixel';
-  let speedUp=(saved&&saved.speedUp)||'off';
-  let levelMode=(saved&&saved.levelMode)||'on';
-  let targetScore=(saved&&saved.targetScore)||100;
-  if(saved&&saved.boardPreset&&PRESETS[saved.boardPreset]){ presetKey=saved.boardPreset; [W,H]=PRESETS[presetKey]; }
+  /* ---------- 设置载入 ---------- */
+  const PRESETS={'30x22':[30,22],'26x18':[26,18],'22x16':[22,16]};
+  let presetKey='26x18'; let W=26,H=18; let TILEPX=22;
+  const saved=JSON.parse(localStorage.getItem('xy_snake_settings')||'{}');
+  function setVar(n,v){ document.documentElement.style.setProperty(n,v); }
+  if(saved.controlsH!=null){ setVar('--controlsH',saved.controlsH); ctlRange.value=saved.controlsH; ctlVal.textContent=saved.controlsH; }
+  if(saved.controlsLift!=null){ setVar('--controlsLift',saved.controlsLift); liftRange.value=saved.controlsLift; liftVal.textContent=saved.controlsLift; }
+  if(saved.actionsPadRight!=null){ setVar('--actionsPadRight',saved.actionsPadRight); padRange.value=saved.actionsPadRight; padVal.textContent=saved.actionsPadRight; }
+  let startSpeed = saved.startSpeed!=null ? +saved.startSpeed : 7;
+  let sfxOn = saved.sfxOn!==false;
+  let bgmOn = saved.bgmOn!==false;
+  let wallMode = saved.wallMode||'wrap';
+  let foodStyle= saved.foodStyle||'pixel';
+  let speedUp  = saved.speedUp||'off';
+  let levelMode= saved.levelMode||'on';
+  let targetScore = saved.targetScore||100;
+  if(saved.boardPreset && PRESETS[saved.boardPreset]){ presetKey=saved.boardPreset; [W,H]=PRESETS[presetKey]; }
   boardPresetSel.value=presetKey;
 
-  let confettiCount=(saved&&saved.confettiCount)||80;
-  let confettiDur=(saved&&saved.confettiDur)||1200;
+  let confettiCount = saved.confettiCount||80;
+  let confettiDur   = saved.confettiDur||1200;
   confettiNSlider.value=confettiCount; confettiTSlider.value=confettiDur; confettiTVal.textContent=confettiDur;
 
-  let rewardMode=(saved&&saved.rewardMode)||'points';
-  let rewardPoints=(saved&&saved.rewardPoints)||50;
+  let rewardMode  = saved.rewardMode||'points';
+  let rewardPoints= saved.rewardPoints||50;
   rewardModeSel.value=rewardMode; rewardPointsSlider.value=rewardPoints; rewardVal.textContent=rewardPoints;
   rewardPointsRow.style.display = (rewardMode==='points'?'block':'none');
 
+  /* ---------- 皮肤 ---------- */
   const ALL_SKINS=[
     {key:'classic', name:'经典粉', head:'#ff6fa5', body:'#ff9fbc'},
     {key:'spring',  name:'春日绿', head:'#5ec48d', body:'#9be4c0'},
@@ -284,8 +278,8 @@
     {key:'sunset',  name:'落日晚', head:'#ff7a59', body:'#ffb59f'},
     {key:'grape',   name:'葡萄紫', head:'#9a6bff', body:'#c5a8ff'}
   ];
-  let unlocked = (saved&&saved.unlocked)||['classic'];
-  let skinKey = (saved&&saved.skinKey)||'classic';
+  let unlocked = saved.unlocked||['classic'];
+  let skinKey  = saved.skinKey||'classic';
   const COL={grid:'#ffffff35', head:'#ff6fa5', body:'#ff9fbc', eye:'#4c2d3a'};
   function applyPalette(){ const s=ALL_SKINS.find(k=>k.key===skinKey)||ALL_SKINS[0]; COL.head=s.head; COL.body=s.body; }
   function renderSkins(){
@@ -300,22 +294,18 @@
   }
   renderSkins(); applyPalette();
 
-  /* ===== BGM：优先播放 friendship.mp3；失败则启用 WebAudio 8-bit 备胎 ===== */
+  /* ---------- 背景音乐（优先 mp3，失败用 WebAudio 备胎） ---------- */
   let bgmTried=false, synthCtx=null, synthOn=false;
   bgmEl.volume=0.7;
   async function tryPlayBGM(){
     if(!bgmOn) return;
-    // 先试mp3
-    try{
-      await bgmEl.play();
-      return;
-    }catch(e){
-      // 启动合成器
+    try{ await bgmEl.play(); return; }
+    catch(e){
+      // 备胎：8-bit 合成
       if(!synthCtx){
         synthCtx = new (window.AudioContext||window.webkitAudioContext)();
-        const bpm=128, step=60/bpm/2; // 8分音符
-        const scale=[0,2,4,7,9,12,14,16]; // 大调小旋律
-        let t = synthCtx.currentTime + 0.05;
+        const bpm=128, step=60/bpm/2;
+        const scale=[0,2,4,7,9,12,14,16];
         function note(time, midi, dur=step){
           const o=synthCtx.createOscillator(), g=synthCtx.createGain();
           o.type='square'; o.frequency.value=440*Math.pow(2,(midi-69)/12);
@@ -324,11 +314,12 @@
           o.connect(g).connect(synthCtx.destination);
           o.start(time); o.stop(time+dur);
         }
+        let t = synthCtx.currentTime + 0.05;
         function loop(){
           if(!synthOn) return;
           for(let i=0;i<16;i++){
             const deg = scale[(i*2)%scale.length];
-            const midi = 72 + deg + (i%8===0?12:0); // 偶尔高八度点缀
+            const midi = 72 + deg + (i%8===0?12:0);
             note(t+i*step, midi, step*0.95);
           }
           t += 16*step;
@@ -336,25 +327,24 @@
         }
         synthOn=true; loop();
       }
-      if(synthCtx && synthCtx.state==='suspended'){ try{ await synthCtx.resume(); }catch(e2){} }
+      if(synthCtx && synthCtx.state==='suspended'){ try{ await synthCtx.resume(); }catch{} }
     }
   }
   function stopSynth(){ synthOn=false; if(synthCtx){ try{synthCtx.close();}catch{} synthCtx=null; } }
 
-  function uiToast(t){ const m=document.getElementById('msg'); m.textContent=t; m.style.display='block'; setTimeout(()=>{ if(!over && !win) m.style.display='none'; },1200); }
+  function uiToast(t){ msg.textContent=t; msg.style.display='block'; setTimeout(()=>{ msg.style.display='none'; },1200); }
 
-  const sfxBtn=document.getElementById('sfx'); const bgmBtn=document.getElementById('bgmToggle');
-  let sfxOn=!(saved&&saved.sfxOn===false); let bgmState=(saved&&saved.bgmOn!==false);
-  sfxBtn.textContent='音效: '+(sfxOn?'开':'关'); bgmBtn.textContent='音乐: '+(bgmState?'开':'关');
-  bgmBtn.onclick=()=>{ bgmState=!bgmState; bgmOn=bgmState; bgmBtn.textContent='音乐: '+(bgmOn?'开':'关'); saveSettings(); if(bgmOn){ tryPlayBGM(); } else { bgmEl.pause(); stopSynth(); } };
+  // 顶部按钮状态
+  sfxBtn.textContent='音效: '+(sfxOn?'开':'关');
+  bgmBtn.textContent='音乐: '+(bgmOn?'开':'关');
+  bgmBtn.onclick=()=>{ bgmOn=!bgmOn; bgmBtn.textContent='音乐: '+(bgmOn?'开':'关'); saveSettings(); if(bgmOn) tryPlayBGM(); else { bgmEl.pause(); stopSynth(); } };
   sfxBtn.onclick=()=>{ sfxOn=!sfxOn; sfxBtn.textContent='音效: '+(sfxOn?'开':'关'); saveSettings(); };
 
-  // 面板开关
-  function togglePanel(show){ if(show){ panelMask.classList.add('show'); } else { panelMask.classList.remove('show'); } }
+  // 设置面板
+  function togglePanel(show){ panelMask.classList.toggle('show', !!show); }
   document.getElementById('menu').onclick=()=>togglePanel(true);
-  panelMask.addEventListener('click', (e)=>{ if(e.target===panelMask) togglePanel(false); });
+  panelMask.addEventListener('click', e=>{ if(e.target===panelMask) togglePanel(false); });
   document.getElementById('close').onclick=()=>togglePanel(false);
-
   document.getElementById('apply').onclick=()=>{ applySettings(true); togglePanel(false); };
   document.getElementById('reset').onclick=()=>{
     localStorage.removeItem('xy_snake_settings');
@@ -368,23 +358,24 @@
     tryPlayBGM();
   };
 
+  // 即时 UI 显示
   ctlRange.oninput=()=>{ ctlVal.textContent=ctlRange.value; setVar('--controlsH', ctlRange.value); };
   liftRange.oninput=()=>{ liftVal.textContent=liftRange.value; setVar('--controlsLift', liftRange.value); };
   padRange.oninput=()=>{ padVal.textContent=padRange.value; setVar('--actionsPadRight', padRange.value); };
-  tsRange.oninput=()=>{ tsVal.textContent=tsRange.value; };
+  tsRange.oninput =()=>{ tsVal.textContent=tsRange.value; };
   confettiTSlider.oninput=()=>{ confettiTVal.textContent=confettiTSlider.value; };
   rewardPointsSlider.oninput=()=>{ rewardVal.textContent=rewardPointsSlider.value; };
   rewardModeSel.onchange=()=>{ rewardPointsRow.style.display=(rewardModeSel.value==='points'?'block':'none'); };
 
-  function setVar(n,v){document.documentElement.style.setProperty(n,v);}
   function saveSettings(){
-    const data={controlsH:ctlRange.value,controlsLift:liftRange.value,actionsPadRight:padRange.value,
+    localStorage.setItem('xy_snake_settings', JSON.stringify({
+      controlsH:ctlRange.value,controlsLift:liftRange.value,actionsPadRight:padRange.value,
       startSpeed:startSpeed,sfxOn:sfxOn,bgmOn:bgmOn,wallMode:wallMode,foodStyle:foodStyle,speedUp:speedUp,
       levelMode:levelMode,targetScore:targetScore,boardPreset:presetKey,
       confettiCount:confettiCount,confettiDur:confettiDur,
       rewardMode:rewardMode,rewardPoints:rewardPoints,
-      unlocked:unlocked,skinKey:skinKey};
-    localStorage.setItem('xy_snake_settings', JSON.stringify(data));
+      unlocked:unlocked,skinKey:skinKey
+    }));
   }
   function applySettings(persist){
     startSpeed=parseFloat(spdRange.value);
@@ -397,11 +388,12 @@
     fit(); if(needReset) initState();
   }
 
-  // 触控/按键
+  /* ---------- 交互 ---------- */
   let sx=0,sy=0,moved=false; const stage=document.getElementById('stage');
   stage.addEventListener('touchstart',e=>{ const t=e.touches[0]; sx=t.clientX; sy=t.clientY; moved=false; },{passive:true});
-  stage.addEventListener('touchmove',e=>{ moved=true; },{passive:true});
-  stage.addEventListener('touchend',e=>{ if(!moved) return; const t=e.changedTouches[0]; const dx=t.clientX-sx, dy=t.clientY-sy; if(Math.abs(dx)>Math.abs(dy)) setDir(dx>0?1:-1,0); else setDir(0,dy>0?1:-1); },{passive:true});
+  stage.addEventListener('touchmove',()=>{ moved=true; },{passive:true});
+  stage.addEventListener('touchend',e=>{ if(!moved) return; const t=e.changedTouches[0]; const dx=t.clientX-sx, dy=t.clientY-sy;
+    if(Math.abs(dx)>Math.abs(dy)) setDir(dx>0?1:-1,0); else setDir(0,dy>0?1:-1); },{passive:true});
 
   document.getElementById('pause').onclick=()=>{ paused=!paused; vibr(8); };
   document.getElementById('restart').onclick=()=>{ initState(); vibr(15); };
@@ -411,7 +403,7 @@
   document.getElementById('left').onclick=()=>{ setDir(-1,0); vibr(10); };
   document.getElementById('right').onclick=()=>{ setDir(1, 0); vibr(10); };
 
-  // 画布自适配
+  /* ---------- 画布自适配 ---------- */
   function setupCanvas(){
     const dpr=window.devicePixelRatio||1;
     const cssW=cv.clientWidth, cssH=cv.clientHeight;
@@ -432,7 +424,7 @@
   }
   new ResizeObserver(fit).observe(document.getElementById('stage')); fit();
 
-  // 游戏状态
+  /* ---------- 游戏状态与逻辑 ---------- */
   let snake=[], dir=[1,0], queue=[];
   let len=4, speed=startSpeed, score=0, level=1, paused=true, over=false, win=false, overReason='';
   let apple=null, lastAppleAt=0; let mail=null, mailTTL=0;
@@ -451,7 +443,6 @@
 
   function setDir(nx,ny){ if(nx===-dir[0]&&ny===-dir[1]) return; queue.push([nx,ny]); }
 
-  // 食物生成：避开蛇身 + 看门狗 5s
   function spawnAppleAvoidingSnake(occ){
     for(let t=0;t<2000;t++){
       const c=[Math.floor(Math.random()*W),Math.floor(Math.random()*H)];
@@ -502,7 +493,6 @@
     if(now-confettiStart<confettiDur) requestAnimationFrame(stepConfetti); else conf.style.display='none';
   }
 
-  // 通关奖励：加分 / 解锁皮肤
   function rewardWin(){
     if(rewardMode==='points'){
       score+=rewardPoints; hudScore.textContent='分数: '+score+' (+'+rewardPoints+')';
@@ -605,18 +595,18 @@
     else if(!win){ msg.style.display='none'; }
   }
 
-  // 启动
-  initState();
-  // 点击开始后：尝试播放BGM（mp3 或合成器），并开始游戏
+  /* ---------- 启动 & BGM 解锁 ---------- */
+  function startGame(){ startMask.style.display='none'; paused=false; }
   startBtn.addEventListener('click', async ()=>{
-    try { await tryPlayBGM(); bgmTried=true; } catch(e){ uiToast('若无音乐，请检查静音拨片或音量～'); }
-    startMask.style.display='none'; paused=false; // 开始游戏
+    try{ await tryPlayBGM(); bgmTried=true; }catch(e){ uiToast('若无音乐，请检查静音拨片或音量～'); }
+    startGame();
   });
   // 兜底：首次触摸/点击也尝试一次
   window.addEventListener('touchstart', ()=>{ if(!bgmTried){ tryPlayBGM().then(()=>bgmTried=true); } }, { once:true });
   window.addEventListener('mousedown',  ()=>{ if(!bgmTried){ tryPlayBGM().then(()=>bgmTried=true); } }, { once:true });
 
-  tick();
+  /* ---------- 初始化 ---------- */
+  initState(); fit(); tick();
 })();
 </script>
 </body>
