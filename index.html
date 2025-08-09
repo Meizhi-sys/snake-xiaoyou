@@ -3,100 +3,160 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
-<title>Snake — Xiaoyou Edition (PWA)</title>
+<title>Snake — Xiaoyou Edition (PWA v3)</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#F8ECFF">
+<meta name="theme-color" content="#0f1219">
 <link rel="apple-touch-icon" href="icon-512.png">
 <style>
-  html, body { margin:0; height:100%; background:#0f1219; color:#eaeaea; font-family: -apple-system, system-ui, Segoe UI, Roboto, Helvetica, Arial; }
+  :root{ --btn:72px; --gap:14px; --radius:12px; }
+  @media (max-width:360px){ :root{ --btn:60px; --gap:10px; } }
+  html, body { margin:0; height:100%; background:#0f1219; color:#eaeaea; font-family:-apple-system, system-ui, Segoe UI, Roboto, Helvetica, Arial;}
   #wrap { display:flex; flex-direction:column; height:100%; }
-  #topbar { padding:10px 14px; font-size:14px; display:flex; gap:12px; align-items:center; }
-  #topbar span { opacity:.9 }
-  #game { flex:1; display:flex; align-items:center; justify-content:center; position:relative; }
-  canvas { background:#0f1219; max-width: 96vw; max-height: 70vh; border-radius:12px; box-shadow:0 8px 28px rgba(0,0,0,.35); }
-  #btns { display:flex; justify-content:center; gap:12px; padding:10px 0 18px; flex-wrap:wrap; }
-  button {
-    background:#1b2130; color:#eaeaea; border:1px solid #2a3244; border-radius:10px;
-    padding:10px 14px; font-size:16px;
-  }
-  button:active { transform:scale(.98); }
-  #pad { position:absolute; inset:0; touch-action:none; }
-  #msg { position:absolute; inset:auto 0 14px 0; text-align:center; pointer-events:none; font-size:14px; color:#ffc5c5; }
+  #topbar { padding:10px 14px; font-size:14px; display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+  #topbar span { opacity:.92 }
   .tag { padding:2px 8px; border-radius:8px; background:#2a3244; color:#cfd8ff; font-size:12px; }
+  #game { flex:1; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; }
+  #bg {
+    position:absolute; inset:0; z-index:0;
+    background: radial-gradient(1200px 600px at 20% 10%, #1b2130 0%, #0f1219 60%), 
+                radial-gradient(900px 600px at 80% 80%, #172030 0%, #0f1219 70%);
+    filter: saturate(1.1);
+  }
+  #grid {
+    position:absolute; inset:0; z-index:0; opacity:.08;
+    background-image: linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px);
+    background-size: 20px 20px, 20px 20px;
+    background-position: -1px -1px;
+    pointer-events:none;
+  }
+  canvas { position:relative; z-index:1; background: transparent; max-width: 96vw; max-height: 70vh; border-radius:var(--radius); box-shadow:0 8px 28px rgba(0,0,0,.35); }
+  #pad { position:absolute; inset:0; z-index:2; touch-action:none; }
+  #msg { position:absolute; inset:auto 0 calc(var(--btn) + 24px) 0; text-align:center; pointer-events:none; font-size:14px; color:#ffc5c5; z-index:3; }
+  #controls { position:absolute; inset:auto 0 8px 0; z-index:4; display:flex; justify-content:space-between; align-items:flex-end; padding:0 10px; }
+  .cluster { display:grid; gap: var(--gap); }
+  #dpad { grid-template-areas: ". up ." "left . right" ". down ."; }
+  .btn {
+    width: var(--btn); height: var(--btn);
+    background:#1b2130; color:#eaeaea; border:1px solid #2a3244; border-radius:14px;
+    display:flex; align-items:center; justify-content:center; font-size:22px;
+  }
+  .btn:active { transform: scale(.97); }
+  #actions { grid-template-columns: repeat(4, 1fr); }
+  #actions .btn { font-size:18px; width: calc(var(--btn)*0.9); height: calc(var(--btn)*0.9); }
 </style>
 </head>
 <body>
 <div id="wrap">
   <div id="topbar">
-    <span class="tag">PWA</span>
+    <span class="tag">PWA v3</span>
     <span id="score">Score: 0</span>
     <span id="speed">Speed: 10</span>
-    <span id="tip">Swipe ←↑→↓ or use buttons · Share → Add to Home Screen</span>
+    <span id="tip">Swipe or use large controls · Share → Add to Home Screen</span>
   </div>
   <div id="game">
+    <div id="bg"></div>
+    <div id="grid"></div>
     <canvas id="cv" width="660" height="480"></canvas>
     <div id="pad"></div>
     <div id="msg"></div>
-  </div>
-  <div id="btns">
-    <button id="up">↑</button>
-    <button id="left">←</button>
-    <button id="down">↓</button>
-    <button id="right">→</button>
-    <button id="pause">Pause</button>
-    <button id="restart">Restart</button>
+    <div id="controls">
+      <div class="cluster" id="dpad">
+        <button class="btn" id="up"    style="grid-area: up;">↑</button>
+        <button class="btn" id="left"  style="grid-area: left;">←</button>
+        <button class="btn" id="right" style="grid-area: right;">→</button>
+        <button class="btn" id="down"  style="grid-area: down;">↓</button>
+      </div>
+      <div class="cluster" id="actions">
+        <button class="btn" id="pause">❚❚</button>
+        <button class="btn" id="restart">↻</button>
+        <button class="btn" id="sfx">SFX:on</button>
+        <button class="btn" id="bgm">BGM:on</button>
+      </div>
+    </div>
   </div>
 </div>
 <script>
-// ---- PWA registration ----
+// Register updated SW (v3)
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('service-worker.js');
-  });
+  window.addEventListener('load', () => { navigator.serviceWorker.register('service-worker.js'); });
 }
 </script>
 <script>
 (function(){
-  const TILE=20, W=33, H=22;           // grid
-  const cv=document.getElementById('cv');
-  const ctx=cv.getContext('2d');
-  const scoreEl=document.getElementById('score');
-  const speedEl=document.getElementById('speed');
-  const msg=document.getElementById('msg');
-  const pad=document.getElementById('pad');
+  const TILE=20, W=33, H=22;
+  const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+  const scoreEl=document.getElementById('score'), speedEl=document.getElementById('speed'), msg=document.getElementById('msg'), pad=document.getElementById('pad');
 
   function fit(){
-    const vw = Math.min(window.innerWidth*0.96, 720);
-    const vh = Math.min(window.innerHeight*0.70, 520);
+    const vw = Math.min(window.innerWidth*0.96, 820);
+    const vh = Math.min(window.innerHeight*0.70, 560);
     const scale = Math.min(vw/(W*TILE), vh/(H*TILE));
     cv.style.width = (W*TILE*scale)+'px';
     cv.style.height = (H*TILE*scale)+'px';
   }
   window.addEventListener('resize', fit); fit();
 
-  // palette
-  const BG = '#0f1219', GRID = '#151b26';
-  const SNAKE = '#46dc85', HEAD='#78ffb2', APPLE='#f05a5a', TXT='#eaeaea';
+  // colors
+  const SNAKE='#46dc85', HEAD='#78ffb2', APPLE='#f05a5a';
+
+  // --- WebAudio (SFX + BGM) ---
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  let actx, masterGain, sfxOn = true, bgmOn = true, bgm = null;
+
+  function ensureAudio(){
+    if(!actx){
+      actx = new AudioCtx();
+      masterGain = actx.createGain(); masterGain.connect(actx.destination);
+      masterGain.gain.value = 0.6;
+    }
+    if(bgmOn && !bgm){ startBGM(); }
+  }
+  function beep(freq=440, dur=0.08, type='sine', gain=0.2){
+    if(!sfxOn || !actx) return;
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.type = type; o.frequency.value = freq;
+    g.gain.value = gain; o.connect(g); g.connect(masterGain);
+    const t = actx.currentTime;
+    o.start(t); o.stop(t+dur);
+    g.gain.setValueAtTime(gain, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t+dur);
+  }
+  function startBGM(){
+    if(!actx || !bgmOn) return;
+    const o1 = actx.createOscillator(), o2 = actx.createOscillator();
+    const g = actx.createGain(); g.gain.value = 0.06;
+    o1.type='triangle'; o2.type='sine';
+    o1.frequency.value = 196; // G3
+    o2.frequency.value = 261.63; // C4
+    o1.connect(g); o2.connect(g); g.connect(masterGain);
+    o1.start(); o2.start();
+    bgm = {o1,o2,g};
+  }
+  function stopBGM(){
+    if(bgm){
+      try{ bgm.o1.stop(); bgm.o2.stop(); }catch(e){}
+      bgm = null;
+    }
+  }
 
   // state
   let snake=[[Math.floor(W/2), Math.floor(H/2)]], dir=[1,0], queue=[], len=4;
   let speed=10, score=0, paused=false, over=false;
   let apple = rndEmpty(new Set(snake.map(JSON.stringify)));
 
+  function vibrate(ms){ try{ if('vibrate' in navigator) navigator.vibrate(ms);}catch(e){} }
   function rndEmpty(occ){
     while(true){
       const c=[Math.floor(Math.random()*W), Math.floor(Math.random()*H)];
       if(!occ.has(JSON.stringify(c))) return c;
     }
   }
-
   function drawRect(x,y,color,r=5){
     const px=x*TILE, py=y*TILE;
     const w=TILE-1, h=TILE-1;
     ctx.fillStyle=color;
     roundRect(ctx, px, py, w, h, r); ctx.fill();
   }
-
   function roundRect(ctx, x, y, w, h, r){
     r=Math.min(r, w/2, h/2);
     ctx.beginPath();
@@ -107,18 +167,31 @@ if ('serviceWorker' in navigator) {
     ctx.arcTo(x,   y,   x+w, y,   r);
     ctx.closePath();
   }
-
   function setDir(nx,ny){
     if(nx===-dir[0] && ny===-dir[1]) return;
     queue.push([nx,ny]);
+    beep(220, 0.05, 'square', 0.07);
   }
 
-  document.getElementById('up').onclick=()=>setDir(0,-1);
-  document.getElementById('down').onclick=()=>setDir(0,1);
-  document.getElementById('left').onclick=()=>setDir(-1,0);
-  document.getElementById('right').onclick=()=>setDir(1,0);
-  document.getElementById('pause').onclick=()=>paused=!paused;
-  document.getElementById('restart').onclick=()=>reset();
+  // big buttons
+  document.getElementById('up').onclick = ()=>{ ensureAudio(); setDir(0,-1); vibrate(10); };
+  document.getElementById('down').onclick = ()=>{ ensureAudio(); setDir(0,1); vibrate(10); };
+  document.getElementById('left').onclick = ()=>{ ensureAudio(); setDir(-1,0); vibrate(10); };
+  document.getElementById('right').onclick = ()=>{ ensureAudio(); setDir(1,0); vibrate(10); };
+  document.getElementById('pause').onclick = ()=>{ ensureAudio(); paused=!paused; vibrate(8); };
+  document.getElementById('restart').onclick = ()=>{ ensureAudio(); reset(); vibrate(15); };
+  document.getElementById('sfx').onclick = (e)=>{
+    ensureAudio(); sfxOn=!sfxOn; e.target.textContent = 'SFX:'+(sfxOn?'on':'off'); vibrate(8);
+  };
+  document.getElementById('bgm').onclick = (e)=>{
+    ensureAudio(); bgmOn=!bgmOn; e.target.textContent = 'BGM:'+(bgmOn?'on':'off'); 
+    if(bgmOn){ startBGM(); } else { stopBGM(); }
+    vibrate(8);
+  };
+
+  // Start audio on first interaction (iOS policy)
+  window.addEventListener('touchstart', ensureAudio, {once:true});
+  window.addEventListener('mousedown', ensureAudio, {once:true});
 
   // swipe input
   let sx=0, sy=0, moved=false;
@@ -126,12 +199,9 @@ if ('serviceWorker' in navigator) {
   pad.addEventListener('touchmove', e=>{ moved=true; }, {passive:true});
   pad.addEventListener('touchend', e=>{
     if(!moved) return;
+    ensureAudio();
     const t=e.changedTouches[0]; const dx=t.clientX - sx, dy=t.clientY - sy;
-    if(Math.abs(dx) > Math.abs(dy)){
-      setDir(dx>0?1:-1, 0);
-    }else{
-      setDir(0, dy>0?1:-1);
-    }
+    if(Math.abs(dx) > Math.abs(dy)){ setDir(dx>0?1:-1, 0); } else { setDir(0, dy>0?1:-1); }
   }, {passive:true});
 
   function reset(){
@@ -152,13 +222,15 @@ if ('serviceWorker' in navigator) {
       const head=[nx,ny];
 
       for(let i=0;i<snake.length;i++){
-        if(snake[i][0]===head[0] && snake[i][1]===head[1]){ over=true; break; }
+        if(snake[i][0]===head[0] && snake[i][1]===head[1]){ over=true; vibrate(120); beep(120,0.2,'sawtooth',0.2); break; }
       }
       if(!over){
         snake.unshift(head);
         if(snake.length>len) snake.pop();
         if(head[0]===apple[0] && head[1]===apple[1]){
-          len++; score+=10; speed=Math.min(22, speed+0.5);
+          len++; score+=10; speed=Math.min(22, speed+0.5); vibrate(30);
+          // little arpeggio on eat
+          beep(523.25,0.06,'triangle',0.15); setTimeout(()=>beep(659.25,0.06,'triangle',0.15),70); setTimeout(()=>beep(783.99,0.07,'triangle',0.15),140);
           apple=rndEmpty(new Set(snake.map(JSON.stringify)));
         }
       }
@@ -169,18 +241,13 @@ if ('serviceWorker' in navigator) {
 
   function draw(){
     ctx.clearRect(0,0,cv.width,cv.height);
-    // grid lines
-    ctx.strokeStyle=GRID; ctx.lineWidth=1;
-    for(let x=0;x<=W;x++){ ctx.beginPath(); ctx.moveTo(x*TILE+0.5,0); ctx.lineTo(x*TILE+0.5,H*TILE); ctx.stroke(); }
-    for(let y=0;y<=H;y++){ ctx.beginPath(); ctx.moveTo(0,y*TILE+0.5); ctx.lineTo(W*TILE,y*TILE+0.5); ctx.stroke(); }
-
     drawRect(apple[0], apple[1], APPLE, 6);
     for(let i=0;i<snake.length;i++){
       drawRect(snake[i][0], snake[i][1], i===0?HEAD:SNAKE, 6);
     }
     scoreEl.textContent = 'Score: '+score;
     speedEl.textContent = 'Speed: '+speed.toFixed(1);
-    msg.textContent = paused ? 'Paused' : (over ? 'Game Over — tap Restart' : '');
+    msg.textContent = paused ? 'Paused' : (over ? 'Game Over — tap ↻' : '');
   }
   tick();
 })();
