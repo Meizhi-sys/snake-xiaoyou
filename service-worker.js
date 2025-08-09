@@ -1,6 +1,37 @@
+const CACHE_NAME = 'snake-game-cache-v1';
+const ASSETS_TO_CACHE = [
+    '/',
+    '/index.html',
+    '/bgm.js',
+    '/friendship.mp3',
+    '/manifest.json'
+];
 
-const CACHE_NAME='snake-pwa-v6-15-min';
-const CORE=['./','./index.html','./bgm.js','./manifest.json','./icon-512.png'];
-self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE_NAME).then(c=>c.addAll(CORE)));self.skipWaiting();});
-self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(keys=>Promise.all(keys.map(k=>k!==CACHE_NAME&&caches.delete(k)))));self.clients.claim();});
-self.addEventListener('fetch',e=>{e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).catch(()=>caches.match('./index.html'))));});
+// 安装
+self.addEventListener('install', event => {
+    event.waitUntil(
+        caches.open(CACHE_NAME)
+            .then(cache => cache.addAll(ASSETS_TO_CACHE))
+    );
+});
+
+// 激活
+self.addEventListener('activate', event => {
+    event.waitUntil(
+        caches.keys().then(keys =>
+            Promise.all(keys.map(key => {
+                if (key !== CACHE_NAME) {
+                    return caches.delete(key);
+                }
+            }))
+        )
+    );
+});
+
+// 请求拦截
+self.addEventListener('fetch', event => {
+    event.respondWith(
+        caches.match(event.request)
+            .then(response => response || fetch(event.request))
+    );
+});
