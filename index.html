@@ -52,6 +52,11 @@
   #panel input[type=range], #panel select{ width:260px; max-width:70vw; }
   #panel .row{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
   #panel .sticky{ position:sticky; bottom:0; background:#fff7fb; padding-top:6px; }
+  #panel{
+  touch-action: pan-y;                /* 允许垂直滚动（不受 body 的 touch-action:none 影响） */
+  -webkit-overflow-scrolling: touch;  /* iOS 惯性滚动 */
+  max-height: calc(var(--vh) * 72);   /* 略微加大可视高度，留出手指空间 */
+}
   #skins{ display:flex; gap:8px; flex-wrap:wrap; }
   .skin{ padding:6px 10px; border-radius:10px; border:1px solid #ffd1e2; background:#fff; cursor:pointer; }
   .skin.locked{ opacity:.5; filter:grayscale(1); }
@@ -201,7 +206,7 @@
 </div>
 
 <!-- 背景音乐：iOS 需点击触发，这里放元素 + JS 控制 -->
-<audio id="bgm" src="friendship.mp3" preload="auto" loop></audio>
+<audio id="bgm" src="friendship.mp3" preload="auto" loop playsinline></audio>
 
 <script>
   // Service Worker 注册 + iOS 视口修正
