@@ -1,39 +1,73 @@
-// bgm.js — load & cache friendship.mp3 after first user gesture
+// bgm.js — robust BGM with HTMLAudio + WebAudio fallback
 (function () {
   const URL_FRIENDSHIP = "https://files.freemusicarchive.org/storage-freemusicarchive-org/music/no_curator/Komiku/Its_time_for_adventure/Komiku_-_12_-_Friendship.mp3";
   let audioEl = null;
-  let armed = false;
+  let ac = null, master = null, loopTimer = null;
+  let started = false;
 
-  function ensureAudio() {
+  function ensureAudioEl() {
     if (!audioEl) {
-      audioEl = new Audio();
+      audioEl = new Audio(URL_FRIENDSHIP);
       audioEl.loop = true;
-      audioEl.volume = 0.42;
-      audioEl.src = URL_FRIENDSHIP;
+      audioEl.volume = 0.5;
     }
     return audioEl;
+  }
+  function ensureCtx() {
+    if (!ac) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      ac = new AC();
+      master = ac.createGain();
+      master.gain.value = 0.25;
+      master.connect(ac.destination);
+    }
+    return ac;
+  }
+  function startSynthLoop() {
+    const AC = ensureCtx();
+    if (!AC) return Promise.reject(new Error('No WebAudio'));
+    if (loopTimer) return Promise.resolve();
+    let t = ac.currentTime + 0.05;
+    function bar() {
+      const chords = [[261.63,392.00],[196.00,392.00],[220.00,440.00],[174.61,349.23]];
+      for (let k=0;k<chords.length;k++) {
+        const [f1,f2] = chords[k];
+        const o1 = ac.createOscillator(), o2 = ac.createOscillator();
+        const g = ac.createGain(); g.gain.value = 0.06;
+        o1.type='triangle'; o2.type='sine';
+        o1.frequency.value=f1; o2.frequency.value=f2;
+        o1.connect(g); o2.connect(g); g.connect(master);
+        o1.start(t+k*0.6); o2.start(t+k*0.6);
+        g.gain.setValueAtTime(0.06, t+k*0.6);
+        g.gain.exponentialRampToValueAtTime(0.0005, t+k*0.6+0.55);
+        o1.stop(t+k*0.6+0.6); o2.stop(t+k*0.6+0.6);
+      }
+      t += 2.4;
+      loopTimer = setTimeout(bar, 2200);
+    }
+    bar();
+    return Promise.resolve();
   }
 
   function cacheBGM() {
     if (!('caches' in window)) return;
-    try {
-      fetch(URL_FRIENDSHIP, { mode: 'no-cors' })
-        .then(resp => caches.open('snake-pwa-v6-7').then(c => c.put(URL_FRIENDSHIP, resp)))
-        .catch(()=>{});
-    } catch (e) {}
+    fetch(URL_FRIENDSHIP, { mode: 'no-cors' })
+      .then(resp => caches.open('snake-pwa-v6-9').then(c => c.put(URL_FRIENDSHIP, resp)))
+      .catch(()=>{});
   }
 
-  function armOnce() {
-    if (armed) return;
-    armed = true;
-    const a = ensureAudio();
-    a.play().then(cacheBGM).catch(() => {
-      // show mini hint toast if page provides one
-      const t = document.getElementById('toast');
-      if (t) { t.textContent = '点一下屏幕以开启音乐 🎵'; t.style.display='block'; setTimeout(()=>t.style.display='none', 1600); }
+  // Called by page on first gesture
+  window.__xyPlayBGM = function () {
+    if (started) return Promise.resolve();
+    started = true;
+    const a = ensureAudioEl();
+    return a.play().then(() => {
+      cacheBGM();
+      return;
+    }).catch(() => {
+      // Fallback: synth loop
+      return startSynthLoop();
     });
-  }
-
-  // public API for page
-  window.__xyPlayBGM = armOnce;
+  };
 })();
