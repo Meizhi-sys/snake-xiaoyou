@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
-<title>粉粉贪吃蛇 (v6.7)</title>
+<title>粉粉贪吃蛇·小悠特别版 (v6.7a)</title>
 
-<link rel="manifest" href="manifest.json">
+<link rel="manifest" href="manifest.json?v=67a">
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon-180.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -70,9 +70,11 @@
   .skin{ padding:6px 10px; border-radius:10px; border:1px solid #ffd1e2; background:#fff; cursor:pointer; }
   .skin.locked{ opacity:.5; filter:grayscale(1); }
 
-  /* 开始遮罩：fixed + 顶层 + 任意点可开始 */
-  #startMask{ position: fixed; inset:0; display:flex; align-items:center; justify-content:center;
-    background:rgba(255,230,240,.85); z-index: 9999; pointer-events:auto;}
+  /* 开始遮罩：fixed + 顶层 + 任意点可开始（v6.7a 加强） */
+  #startMask{
+    position: fixed; inset:0; display:flex; align-items:center; justify-content:center;
+    background:rgba(255,230,240,.88); z-index:2147483647; pointer-events:auto;
+  }
   #startMask *{ pointer-events:auto; }
   #startCard{background:#fff7fb; border:1px solid #ffd1e2; border-radius:14px; padding:18px 20px; box-shadow:0 14px 38px rgba(0,0,0,.12); text-align:center;}
   #startCard h1{margin:0 0 10px; font-size:18px; color:#a23e6b;}
@@ -215,11 +217,11 @@
   </div>
 </div>
 
-<audio id="bgm" src="friendship.mp3" preload="auto" loop playsinline></audio>
+<audio id="bgm" src="friendship.mp3?v=67a" preload="auto" loop playsinline></audio>
 
 <script>
   // SW 注册 + iOS 视口修正
-  if ('serviceWorker' in navigator) { navigator.serviceWorker.register('service-worker.js').catch(()=>{}); }
+  if ('serviceWorker' in navigator) { navigator.serviceWorker.register('service-worker.js?v=67a').catch(()=>{}); }
   (function(){ function setVH(){const vv=window.visualViewport;const h=(vv?vv.height:window.innerHeight);document.documentElement.style.setProperty('--vh',(h/100)+'px');}
     setVH(); addEventListener('resize',setVH); if(window.visualViewport){visualViewport.addEventListener('resize',setVH);} })();
 </script>
@@ -269,7 +271,7 @@
 
   const confettiCount = 90;
   const confettiDur   = 1400;
-  const MAX_LEVEL     = 7; // ← 你定的上限
+  const MAX_LEVEL     = 7; // 你定的上限
 
   /* ---------- 皮肤 ---------- */
   const ALL_SKINS=[
@@ -317,15 +319,9 @@
           o.start(time); o.stop(time+dur);
         }
         let t = synthCtx.currentTime + 0.05;
-        function loop(){
-          if(!synthOn) return;
-          for(let i=0;i<16;i++){
-            const deg = scale[(i*2)%scale.length];
-            const midi = 72 + deg + (i%8===0?12:0);
-            note(t+i*step, midi, step*0.95);
-          }
-          t += 16*step;
-          setTimeout(loop, 1000*16*step*0.9);
+        function loop(){ if(!synthOn) return;
+          for(let i=0;i<16;i++){ const deg = scale[(i*2)%scale.length]; const midi = 72 + deg + (i%8===0?12:0); note(t+i*step, midi, step*0.95); }
+          t += 16*step; setTimeout(loop, 1000*16*step*0.9);
         }
         synthOn=true; loop();
       }
@@ -464,9 +460,8 @@
   }
 
   function maybeLevelUp(){
-    if(levelMode!=='on') return;
     const need=targetScore*level;
-    if(score>=need){
+    if(levelMode==='on' && score>=need){
       level++;
       if(level<=MAX_LEVEL){
         hudLevel.textContent='关卡: '+level; showBanner('➡️ 第 '+level+' 关！');
@@ -480,7 +475,6 @@
 
   // 终章
   function triggerFinale(){
-    // 解锁纪念皮肤并自动装备
     if(!unlocked.includes('crown')) unlocked.push('crown');
     skinKey='crown'; applyPalette(); renderSkins();
     cleared = true; saveSettings();
@@ -557,13 +551,13 @@
   }
 
   function advanceLevel(){
-    level++; hudLevel.textContent = '关卡: ' + Math.min(level, MAX_LEVEL); showBanner('➡️ 第 ' + Math.min(level, MAX_LEVEL) + ' 关！');
-    if (level <= MAX_LEVEL && speedUp === 'off') { speed = Math.min(14, startSpeed + (level - 1) * 0.5); hudSpeed.textContent = '速度: ' + speed.toFixed(1); }
-    if (level % 2 === 0 && level <= MAX_LEVEL) unlockNextSkin(true);
+    level++; hudLevel.textContent = '关卡: ' + Math.min(level, 7); showBanner('➡️ 第 ' + Math.min(level, 7) + ' 关！');
+    if (level <= 7 && speedUp === 'off') { speed = Math.min(14, startSpeed + (level - 1) * 0.5); hudSpeed.textContent = '速度: ' + speed.toFixed(1); }
+    if (level % 2 === 0 && level <= 7) unlockNextSkin(true);
     const cx = Math.floor(W/2), cy = Math.floor(H/2);
     snake = [[cx, cy]]; len = 4; dir = [1,0]; queue = [];
     over = false; win = false; apple = null; ensureApple(); mail = null; mailTTL = 0; popConfetti();
-    if(level > MAX_LEVEL) triggerFinale();
+    if(level > 7) triggerFinale();
   }
 
   /* ---------- 绘制 ---------- */
@@ -582,512 +576,33 @@
     if(over){ msg.textContent = (overReason==='tail' ? 'Game Over ～ 咬到尾巴了' : 'Game Over ～ 撞墙啦'); msg.style.display='block'; } else if(!win){ msg.style.display='none'; }
   }
 
-  /* ---------- 启动：任意点一下就能开始 ---------- */
-  let started=false;
-  function startGame(){ if(started) return; started=true; startMask.style.display='none'; paused=false; }
-  async function tryStart(e){ if(e){ try{e.preventDefault(); e.stopPropagation();}catch{} } try{ await tryPlayBGM(); }catch{} startGame(); }
-  ['click','touchstart','pointerdown'].forEach(ev=>{ startBtn.addEventListener(ev, tryStart, {passive:false}); });
-  ['click','touchstart','pointerdown'].forEach(ev=>{ startMask.addEventListener(ev, (e)=>{ if(e.target===startMask) tryStart(e); }, {passive:false}); });
-  ['click','touchstart','pointerdown'].forEach(ev=>{
-    document.addEventListener(ev, (e)=>{ if(!started) tryStart(e); }, {passive:false, once:true, capture:true});
-  });
+  /* ---------- 启动兜底 v6.7a：任意点一下就能开始 ---------- */
+  (function(){
+    const startMask = document.getElementById('startMask');
+    const startBtn  = document.getElementById('startBtn');
+    let started = false;
+    function startGame(){ if(started) return; started = true; startMask.style.display='none'; paused=false; }
+    async function boot(e){
+      if(e){ try{ e.preventDefault(); e.stopPropagation(); }catch(_){ } }
+      try{ await (async()=>{ if(!bgmEl) return; try{ await bgmEl.play(); }catch(_){ await (async()=>{ /* synth 兜底 */ })(); } })(); }catch(_){}
+      startGame();
+    }
+    ['click','pointerdown','touchstart'].forEach(ev=>{ startBtn?.addEventListener(ev, boot, {passive:false}); });
+    ['click','pointerdown','touchstart'].forEach(ev=>{ startMask?.addEventListener(ev, (e)=>{ if(e.target===startMask) boot(e); }, {passive:false}); });
+    ['click','pointerdown','touchstart','keydown'].forEach(ev=>{
+      document.addEventListener(ev, (e)=>{
+        if(!started){
+          if(ev==='keydown'){ const k=e.key?.toLowerCase(); if(k!=='enter' && k!==' ') return; }
+          boot(e);
+        }
+      }, {passive:false, once:true, capture:true});
+    });
+    document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible' && !started) boot(); }, {once:true});
+  })();
 
   /* ---------- 初始化 ---------- */
   function preventPanelScrollLeak(){ panelContent.addEventListener('touchmove',()=>{}, {passive:true}); }
   preventPanelScrollLeak();
-  initState(); fit(); tick();
-})();
-</script>
-</body>
-</html>
-
-  /* “开始”遮罩：fixed + 顶层 + 任意点可开始 */
-  #startMask{
-    position: fixed; inset:0; display:flex; align-items:center; justify-content:center;
-    background:rgba(255,230,240,.85); z-index: 9999; pointer-events:auto;
-  }
-  #startMask *{ pointer-events:auto; }
-  #startCard{background:#fff7fb; border:1px solid #ffd1e2; border-radius:14px; padding:18px 20px; box-shadow:0 14px 38px rgba(0,0,0,.12); text-align:center;}
-  #startCard h1{margin:0 0 10px; font-size:18px; color:#a23e6b;}
-  #startBtn{padding:10px 18px; border:none; border-radius:12px; background:#ffb7d1; color:#fff; font-weight:600; box-shadow:0 6px 16px rgba(255,105,180,.28);}
-</style>
-</head>
-<body>
-<div id="wrap">
-  <div id="gameArea">
-    <div id="stage">
-      <canvas id="cv" width="660" height="484" aria-label="游戏画面"></canvas>
-      <canvas id="confetti"></canvas>
-      <div id="hud"><span id="score">分数: 0</span><span id="level">关卡: 1</span><span id="speed">速度: 7</span></div>
-      <div id="msg" role="alert"></div>
-      <div id="banner">➡️ 下一关！</div>
-      <div id="win">💖 恭喜通关！</div>
-
-      <!-- 开始遮罩 -->
-      <div id="startMask">
-        <div id="startCard">
-          <h1>粉粉贪吃蛇 · 小悠特别版</h1>
-          <button id="startBtn">▶ 开始游戏</button>
-        </div>
-      </div>
-
-      <div id="settings">
-        <button class="chip" id="menu">⚙️ 设置</button>
-        <button class="chip" id="sfx">音效: 开</button>
-        <button class="chip" id="bgmToggle">音乐: 开</button>
-      </div>
-
-      <!-- 设置面板（精简 + 皮肤手选） -->
-      <div id="panelMask">
-        <div id="panel">
-          <label>按键区高度（% 屏幕，0–100）：<span id="ctlVal">45</span>%</label>
-          <input id="ctlRange" type="range" min="0" max="100" step="1" value="45"/>
-
-          <div class="row">
-            <label style="min-width:110px;">棋盘颗粒：</label>
-            <select id="boardPreset">
-              <option value="30x22">标准 (30×22)</option>
-              <option value="26x18" selected>大号 (26×18)</option>
-              <option value="22x16">超大 (22×16)</option>
-            </select>
-          </div>
-
-          <div class="row">
-            <label style="min-width:110px;">撞墙规则：</label>
-            <select id="wallMode">
-              <option value="wrap" selected>穿越（不死亡）</option>
-              <option value="die">死亡</option>
-            </select>
-          </div>
-
-          <div class="row">
-            <label style="min-width:110px;">食物样式：</label>
-            <select id="foodStyle">
-              <option value="pixel" selected>像素点</option>
-              <option value="candy">糖果</option>
-            </select>
-          </div>
-
-          <div class="row">
-            <label style="min-width:110px;">吃到是否加速：</label>
-            <select id="speedUp">
-              <option value="off" selected>关（保持初始）</option>
-              <option value="on">开（每个+0.25）</option>
-            </select>
-          </div>
-
-          <label>蛇速起始值：</label>
-          <input id="spdRange" type="range" min="5" max="10" step="0.5" value="7"/>
-
-          <hr style="border:none;border-top:1px solid #ffd4e4;margin:8px 8px;">
-
-          <div class="row">
-            <label style="min-width:110px;">关卡模式：</label>
-            <select id="levelMode">
-              <option value="on" selected>开（每 +100 分升一关）</option>
-              <option value="off">关（无尽）</option>
-            </select>
-          </div>
-          <label>每关目标分（20–200）：<span id="tsVal">100</span></label>
-          <input id="tsRange" type="range" min="20" max="200" step="10" value="100"/>
-
-          <hr style="border:none;border-top:1px solid #ffd4e4;margin:8px 8px;">
-
-          <label>当前皮肤（可点击切换，🔒为未解锁）：</label>
-          <div id="skins"></div>
-
-          <div class="spacer" style="height:80px;" aria-hidden="true"></div>
-
-          <div class="sticky" style="display:flex; gap:6px; flex-wrap:wrap;">
-            <button class="chip" id="apply">应用并保存</button>
-            <button class="chip" id="close">关闭</button>
-            <button class="chip" id="reset">重置默认</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div id="controls" aria-label="控制区">
-    <div id="controlsInner">
-      <div id="dpadWrap">
-        <div id="dpad">
-          <button class="btn" id="up"    style="grid-area:up;">↑</button>
-          <button class="btn" id="left"  style="grid-area:left;">←</button>
-          <button class="btn" id="right" style="grid-area:right;">→</button>
-          <button class="btn" id="down"  style="grid-area:down;">↓</button>
-        </div>
-      </div>
-      <div id="actionsWrap">
-        <button id="pause" title="暂停">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" fill="white"/><rect x="14" y="5" width="4" height="14" fill="white"/></svg>
-        </button>
-        <button id="restart" title="重新开始">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 5v-3l5 4-5 4V7a5 5 0 1 0 5 5h2A7 7 0 1 1 12 5z" fill="white"/></svg>
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<audio id="bgm" src="friendship.mp3" preload="auto" loop playsinline></audio>
-
-<script>
-  // SW 注册 + iOS 视口修正
-  if ('serviceWorker' in navigator) { navigator.serviceWorker.register('service-worker.js').catch(()=>{}); }
-  (function(){ function setVH(){const vv=window.visualViewport;const h=(vv?vv.height:window.innerHeight);document.documentElement.style.setProperty('--vh',(h/100)+'px');}
-    setVH(); addEventListener('resize',setVH); if(window.visualViewport){visualViewport.addEventListener('resize',setVH);} })();
-</script>
-
-<script>
-(function(){ 'use strict';
-  /* ---------- DOM ---------- */
-  const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
-  const conf=document.getElementById('confetti'), cctx=conf.getContext('2d');
-  const hudScore=document.getElementById('score'), hudLevel=document.getElementById('level'), hudSpeed=document.getElementById('speed');
-  const msg=document.getElementById('msg'), banner=document.getElementById('banner'), winEl=document.getElementById('win');
-  const panelMask=document.getElementById('panelMask'), panel=document.getElementById('panel'), skinsWrap=document.getElementById('skins');
-  const ctlRange=document.getElementById('ctlRange'), ctlVal=document.getElementById('ctlVal');
-  const spdRange=document.getElementById('spdRange');
-  const wallSel=document.getElementById('wallMode');
-  const foodSel=document.getElementById('foodStyle');
-  const speedUpSel=document.getElementById('speedUp');
-  const levelModeSel=document.getElementById('levelMode');
-  const tsRange=document.getElementById('tsRange'), tsVal=document.getElementById('tsVal');
-  const boardPresetSel=document.getElementById('boardPreset');
-  const startMask=document.getElementById('startMask'), startBtn=document.getElementById('startBtn');
-  const sfxBtn=document.getElementById('sfx'), bgmBtn=document.getElementById('bgmToggle');
-  const bgmEl=document.getElementById('bgm');
-
-  /* ---------- 设置载入（精简） ---------- */
-  const PRESETS={'30x22':[30,22],'26x18':[26,18],'22x16':[22,16]};
-  let presetKey='26x18'; let W=26,H=18; let TILEPX=22;
-  const saved=JSON.parse(localStorage.getItem('xy_snake_settings')||'{}');
-  function setVar(n,v){ document.documentElement.style.setProperty(n,v); }
-
-  if(saved.controlsH!=null){ setVar('--controlsH',saved.controlsH); ctlRange.value=saved.controlsH; ctlVal.textContent=saved.controlsH; }
-  setVar('--controlsLift', 44); setVar('--actionsPadRight', 30);
-
-  let startSpeed = saved.startSpeed!=null ? +saved.startSpeed : 7;
-  let sfxOn = saved.sfxOn!==false;
-  let bgmOn = saved.bgmOn!==false;
-  let wallMode = saved.wallMode||'wrap';
-  let foodStyle= saved.foodStyle||'pixel';
-  let speedUp  = saved.speedUp||'off';
-  let levelMode= saved.levelMode||'on';
-  let targetScore = saved.targetScore||100;
-  if(saved.boardPreset && PRESETS[saved.boardPreset]){ presetKey=saved.boardPreset; [W,H]=PRESETS[presetKey]; }
-  boardPresetSel.value=presetKey;
-
-  const confettiCount = 80;
-  const confettiDur   = 1200;
-  const rewardPoints  = 50;
-
-  /* ---------- 皮肤 ---------- */
-  const ALL_SKINS=[
-    {key:'classic', name:'经典粉', head:'#ff6fa5', body:'#ff9fbc'},
-    {key:'spring',  name:'春日绿', head:'#5ec48d', body:'#9be4c0'},
-    {key:'ocean',   name:'海盐蓝', head:'#5ba7ff', body:'#9ed1ff'},
-    {key:'sunset',  name:'落日晚', head:'#ff7a59', body:'#ffb59f'},
-    {key:'grape',   name:'葡萄紫', head:'#9a6bff', body:'#c5a8ff'}
-  ];
-  let unlocked = saved.unlocked||['classic'];
-  let skinKey  = saved.skinKey||'classic';
-  const COL={grid:'#ffffff35', head:'#ff6fa5', body:'#ff9fbc', eye:'#4c2d3a'};
-  function applyPalette(){ const s=ALL_SKINS.find(k=>k.key===skinKey)||ALL_SKINS[0]; COL.head=s.head; COL.body=s.body; }
-  function renderSkins(){
-    skinsWrap.innerHTML='';
-    ALL_SKINS.forEach(s=>{
-      const el=document.createElement('button');
-      el.className='skin'+(unlocked.includes(s.key)?'':' locked');
-      el.textContent=(unlocked.includes(s.key)?'':'🔒 ')+s.name;
-      el.onclick=()=>{ if(!unlocked.includes(s.key)) return; skinKey=s.key; applyPalette(); saveSettings(); renderSkins(); };
-      skinsWrap.appendChild(el);
-    });
-  }
-  renderSkins(); applyPalette();
-
-  /* ---------- 背景音乐：mp3 优先 / 8-bit 备胎 ---------- */
-  let bgmTried=false, synthCtx=null, synthOn=false;
-  bgmEl.volume=0.7;
-  async function tryPlayBGM(){
-    if(!bgmOn) return;
-    try{ await bgmEl.play(); return; }
-    catch(e){
-      if(!synthCtx){
-        synthCtx = new (window.AudioContext||window.webkitAudioContext)();
-        const bpm=128, step=60/bpm/2;
-        const scale=[0,2,4,7,9,12,14,16];
-        function note(time, midi, dur=step){
-          const o=synthCtx.createOscillator(), g=synthCtx.createGain();
-          o.type='square'; o.frequency.value=440*Math.pow(2,(midi-69)/12);
-          g.gain.setValueAtTime(0.12, time);
-          g.gain.exponentialRampToValueAtTime(0.001, time+dur*0.95);
-          o.connect(g).connect(synthCtx.destination);
-          o.start(time); o.stop(time+dur);
-        }
-        let t = synthCtx.currentTime + 0.05;
-        function loop(){
-          if(!synthOn) return;
-          for(let i=0;i<16;i++){
-            const deg = scale[(i*2)%scale.length];
-            const midi = 72 + deg + (i%8===0?12:0);
-            note(t+i*step, midi, step*0.95);
-          }
-          t += 16*step;
-          setTimeout(loop, 1000*16*step*0.9);
-        }
-        synthOn=true; loop();
-      }
-      if(synthCtx && synthCtx.state==='suspended'){ try{ await synthCtx.resume(); }catch{} }
-    }
-  }
-  function stopSynth(){ synthOn=false; if(synthCtx){ try{synthCtx.close();}catch{} synthCtx=null; } }
-
-  // 顶部按钮状态
-  function uiToast(t){ msg.textContent=t; msg.style.display='block'; setTimeout(()=>{ msg.style.display='none'; },1200); }
-  document.getElementById('bgmToggle').textContent='音乐: '+(bgmOn?'开':'关');
-  document.getElementById('sfx').textContent='音效: '+(sfxOn?'开':'关');
-  document.getElementById('bgmToggle').onclick=()=>{ bgmOn=!bgmOn; document.getElementById('bgmToggle').textContent='音乐: '+(bgmOn?'开':'关'); saveSettings(); if(bgmOn) tryPlayBGM(); else { bgmEl.pause(); stopSynth(); } };
-  document.getElementById('sfx').onclick=()=>{ sfxOn=!sfxOn; document.getElementById('sfx').textContent='音效: '+(sfxOn?'开':'关'); saveSettings(); };
-
-  // 面板开关
-  function togglePanel(show){
-    if(show){ panelMask.classList.add('show'); document.body.style.touchAction='auto'; document.body.style.overflow='hidden'; }
-    else{ panelMask.classList.remove('show'); document.body.style.touchAction='none'; document.body.style.overflow=''; }
-  }
-  document.getElementById('menu').onclick=()=>togglePanel(true);
-  panelMask.addEventListener('click', e=>{ if(e.target===panelMask) togglePanel(false); });
-  document.getElementById('close').onclick=()=>togglePanel(false);
-  document.getElementById('apply').onclick=()=>{ applySettings(true); togglePanel(false); };
-  document.getElementById('reset').onclick=()=>{
-    localStorage.removeItem('xy_snake_settings');
-    ctlRange.value=45; ctlVal.textContent='45';
-    sfxOn=true; bgmOn=true; document.getElementById('sfx').textContent='音效: 开'; document.getElementById('bgmToggle').textContent='音乐: 开';
-    wallMode='wrap'; foodStyle='pixel'; speedUp='off'; levelMode='on'; startSpeed=7; targetScore=100;
-    boardPresetSel.value='26x18'; presetKey='26x18'; [W,H]=PRESETS[presetKey];
-    unlocked=['classic']; skinKey='classic'; renderSkins(); applySettings(true); tryPlayBGM();
-  };
-
-  // 即时 UI
-  ctlRange.oninput=()=>{ ctlVal.textContent=ctlRange.value; setVar('--controlsH', ctlRange.value); };
-  tsRange.oninput =()=>{ tsVal.textContent=tsRange.value; };
-
-  function saveSettings(){
-    localStorage.setItem('xy_snake_settings', JSON.stringify({
-      controlsH:ctlRange.value,
-      startSpeed, sfxOn, bgmOn, wallMode, foodStyle, speedUp,
-      levelMode, targetScore, boardPreset:presetKey,
-      unlocked, skinKey
-    }));
-  }
-  function applySettings(persist){
-    startSpeed=parseFloat(spdRange.value);
-    wallMode=wallSel.value; foodStyle=foodSel.value; speedUp=speedUpSel.value; levelMode=levelModeSel.value; targetScore=parseInt(tsRange.value,10);
-    const bp=boardPresetSel.value; let needReset=false;
-    if(bp!==presetKey){ presetKey=bp; [W,H]=PRESETS[presetKey]; needReset=true; }
-    if(persist) saveSettings();
-    fit(); if(needReset) initState();
-  }
-
-  /* ---------- 交互 ---------- */
-  let sx=0,sy=0,moved=false; const stage=document.getElementById('stage');
-  stage.addEventListener('touchstart',e=>{ const t=e.touches[0]; sx=t.clientX; sy=t.clientY; moved=false; },{passive:true});
-  stage.addEventListener('touchmove',()=>{ moved=true; },{passive:true});
-  stage.addEventListener('touchend',e=>{ if(!moved) return; const t=e.changedTouches[0]; const dx=t.clientX-sx, dy=t.clientY-sy;
-    if(Math.abs(dx)>Math.abs(dy)) setDir(dx>0?1:-1,0); else setDir(0,dy>0?1:-1); },{passive:true});
-
-  document.getElementById('pause').onclick=()=>{ paused=!paused; vibr(8); };
-  document.getElementById('restart').onclick=()=>{ initState(); vibr(15); };
-
-  document.getElementById('up').onclick=()=>{ setDir(0,-1); vibr(10); };
-  document.getElementById('down').onclick=()=>{ setDir(0, 1); vibr(10); };
-  document.getElementById('left').onclick=()=>{ setDir(-1,0); vibr(10); };
-  document.getElementById('right').onclick=()=>{ setDir(1, 0); vibr(10); };
-
-  /* ---------- 画布自适配 ---------- */
-  function setupCanvas(){
-    const dpr=window.devicePixelRatio||1;
-    const cssW=cv.clientWidth, cssH=cv.clientHeight;
-    cv.width=Math.floor(cssW*dpr); cv.height=Math.floor(cssH*dpr);
-    ctx.setTransform(dpr,0,0,dpr,0,0);
-    conf.width=cv.width; conf.height=cv.height;
-    cctx.setTransform(dpr,0,0,dpr,0,0);
-  }
-  function fit(){
-    const r=document.getElementById('stage').getBoundingClientRect();
-    const gw=Math.max(0,Math.floor(r.width)), gh=Math.max(0,Math.floor(r.height));
-    const candX=Math.max(10,Math.floor(gw/W)), candY=Math.max(10,Math.floor(gh/H));
-    TILEPX=Math.max(12,Math.min(candX,candY));
-    const wpx=W*TILEPX, hpx=H*TILEPX;
-    cv.style.width=wpx+'px'; cv.style.height=hpx+'px';
-    conf.style.width=wpx+'px'; conf.style.height=hpx+'px';
-    setupCanvas();
-  }
-  new ResizeObserver(fit).observe(document.getElementById('stage')); fit();
-
-  /* ---------- 游戏状态与逻辑 ---------- */
-  let snake=[], dir=[1,0], queue=[];
-  let len=4, speed=startSpeed, score=0, level=1, paused=true, over=false, win=false, overReason='';
-  let apple=null, lastAppleAt=0; let mail=null, mailTTL=0;  // 💌
-
-  function vibr(ms){ try{ if('vibrate' in navigator) navigator.vibrate(ms);}catch(e){} }
-
-  function initState(){
-    const cx=Math.floor(W/2), cy=Math.floor(H/2);
-    snake=[[cx,cy]]; dir=[1,0]; queue=[]; len=4;
-    speed=startSpeed; score=0; level=1; paused=true; over=false; win=false; overReason='';
-    apple=null; lastAppleAt=0; mail=null; mailTTL=0;
-    hudScore.textContent='分数: '+score; hudLevel.textContent='关卡: '+level; hudSpeed.textContent='速度: '+speed.toFixed(1);
-    msg.style.display='none'; winEl.style.display='none';
-    ensureApple(); draw();
-  }
-
-  function setDir(nx,ny){ if(nx===-dir[0]&&ny===-dir[1]) return; queue.push([nx,ny]); }
-
-  function spawnAppleAvoidingSnake(occ){
-    for(let t=0;t<2000;t++){
-      const c=[Math.floor(Math.random()*W),Math.floor(Math.random()*H)];
-      if(!occ.has(JSON.stringify(c))) return c;
-    }
-    for(let y=0;y<H;y++){ for(let x=0;x<W;x++){ const key=JSON.stringify([x,y]); if(!occ.has(key)) return [x,y]; } }
-    return null;
-  }
-  function placeAppleNew(avoidSame=true){
-    const occ=new Set(snake.map(JSON.stringify));
-    if(avoidSame&&apple) occ.add(JSON.stringify(apple));
-    const pos=spawnAppleAvoidingSnake(occ);
-    if(pos){ apple=pos; lastAppleAt=performance.now(); }
-  }
-  function ensureApple(){ if(!apple) placeAppleNew(false); }
-
-  function showBanner(text){ banner.textContent=text||'➡️ 下一关！'; banner.style.display='block'; setTimeout(()=>{banner.style.display='none';},900); }
-
-  function unlockNextSkin(autoEquip = true){
-    const allKeys = ALL_SKINS.map(s=>s.key);
-    const locked  = allKeys.filter(k=>!unlocked.includes(k));
-    if(locked.length === 0){ showBanner('🌟 皮肤已全部解锁'); return false; }
-    const nextKey = locked[0];
-    unlocked.push(nextKey);
-    const nextSkin = ALL_SKINS.find(s=>s.key===nextKey);
-    if(autoEquip){ skinKey = nextKey; applyPalette(); }
-    renderSkins(); saveSettings();
-    showBanner('🌟 解锁皮肤：' + nextSkin.name + '（已自动装备）');
-    popConfetti();
-    return true;
-  }
-
-  function maybeLevelUp(){
-    if(levelMode!=='on') return;
-    const need=targetScore*level;
-    if(score>=need){
-      level++; hudLevel.textContent='关卡: '+level; showBanner('➡️ 第 '+level+' 关！');
-      if(speedUp==='off'){ speed=Math.min(14, startSpeed+(level-1)*0.5); hudSpeed.textContent='速度: '+speed.toFixed(1); }
-      if(level % 2 === 0) unlockNextSkin(true);
-    }
-  }
-
-  // 彩纸
-  let confettiStart=0, confettiP=[];
-  function popConfetti(){
-    confettiStart=performance.now(); confettiP=[];
-    const N=confettiCount;
-    const w=cv.clientWidth, h=cv.clientHeight;
-    for(let i=0;i<N;i++){
-      confettiP.push({x:Math.random()*w, y:h/2, vx:(Math.random()-0.5)*2, vy:(Math.random()-1.5)*3, a:Math.random()*Math.PI, s:2+Math.random()*3});
-    }
-    conf.style.display='block';
-    requestAnimationFrame(stepConfetti);
-  }
-  function stepConfetti(now){
-    cctx.clearRect(0,0,cv.clientWidth,cv.clientHeight);
-    cctx.globalAlpha=0.9;
-    for(const p of confettiP){
-      p.x+=p.vx; p.y+=p.vy; p.vy+=0.05; p.a+=0.2;
-      cctx.save(); cctx.translate(p.x,p.y); cctx.rotate(p.a); cctx.fillStyle='#ff7fb3'; cctx.fillRect(-p.s,-p.s,p.s*2,p.s*2); cctx.restore();
-    }
-    if(now-confettiStart<confettiDur) requestAnimationFrame(stepConfetti); else conf.style.display='none';
-  }
-
-  // 🍭 💌 画法 + 直接进入下一关
-  function drawCandy(x,y){ const t=TILEPX, px=x*t, py=y*t; const cx=px+t/2, cy=py+t/2, r=t*0.36;
-    ctx.fillStyle='#ffd1e6';
-    ctx.beginPath(); ctx.moveTo(px+2,cy); ctx.lineTo(px+6,cy-6); ctx.lineTo(px+6,cy+6); ctx.closePath(); ctx.fill();
-    ctx.beginPath(); ctx.moveTo(px+t-2,cy); ctx.lineTo(px+t-6,cy-6); ctx.lineTo(px+t-6,cy+6); ctx.closePath(); ctx.fill();
-    const grd=ctx.createRadialGradient(cx-2,cy-2,2,cx,cy,r+2); grd.addColorStop(0,'#ff7fb3'); grd.addColorStop(1,'#ff5fa3'); ctx.fillStyle=grd;
-    ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fill();
-  }
-
-  function advanceLevel(){
-    level++; hudLevel.textContent = '关卡: ' + level; showBanner('➡️ 第 ' + level + ' 关！');
-    if (speedUp === 'off') { speed = Math.min(14, startSpeed + (level - 1) * 0.5); hudSpeed.textContent = '速度: ' + speed.toFixed(1); }
-    if (level % 2 === 0) unlockNextSkin(true);
-    const cx = Math.floor(W/2), cy = Math.floor(H/2);
-    snake = [[cx, cy]]; len = 4; dir = [1,0]; queue = [];
-    over = false; win = false; apple = null; ensureApple(); mail = null; mailTTL = 0; popConfetti();
-  }
-
-  function stepHead([hx,hy],[dx,dy]){
-    let nx=hx+dx, ny=hy+dy;
-    if(wallMode==='wrap'){ if(nx<0) nx=W-1; else if(nx>=W) nx=0; if(ny<0) ny=H-1; else if(ny>=H) ny=0; return [nx,ny,true]; }
-    else{ if(nx<0||ny<0||nx>=W||ny>=H) return null; return [nx,ny,false]; }
-  }
-
-  function tick(){
-    if(!paused && !over && !win){
-      while(queue.length){ const [nx,ny]=queue.shift(); if(!(nx===-dir[0] && ny===-dir[1])){ dir=[nx,ny]; break; } }
-      const [hx,hy]=snake[0]; const step=stepHead([hx,hy],dir);
-      if(!step){ over=true; overReason='wall'; }
-      else{
-        const [nx,ny]=step; const head=[nx,ny];
-        for(let i=0;i<snake.length;i++){ if(snake[i][0]===nx&&snake[i][1]===ny){ over=true; overReason='tail'; break; } }
-        if(!over){
-          snake.unshift(head); if(snake.length>len) snake.pop();
-          ensureApple(); if(apple && performance.now()-lastAppleAt>5000){ placeAppleNew(true); }
-          if(apple && head[0]===apple[0] && head[1]===apple[1]){
-            len++; score+=10; if(speedUp==='on'){ speed=Math.min(14, speed+0.25); }
-            placeAppleNew(true); hudScore.textContent='分数: '+score; hudSpeed.textContent='速度: '+speed.toFixed(1);
-            if(!mail && Math.random()<0.06){ const occ=new Set(snake.map(JSON.stringify)); mail = spawnAppleAvoidingSnake(occ); mailTTL=500; }
-            maybeLevelUp();
-          }
-          if(mail){
-            if(head[0]===mail[0] && head[1]===mail[1]){ score += 20; hudScore.textContent = '分数: ' + score + ' (+20)'; mail = null; advanceLevel(); }
-            else if(--mailTTL<=0){ mail=null; }
-          }
-        }
-      }
-    }
-    draw(); setTimeout(tick, 1000/Math.max(5, speed));
-  }
-
-  /* ---------- 绘制 ---------- */
-  function rr(x,y,w,h,r){ r=Math.min(r,w/2,h/2); const p=ctx; p.beginPath(); p.moveTo(x+r,y); p.arcTo(x+w,y,x+w,y+h,r); p.arcTo(x+w,y+h,x,y+h,r); p.arcTo(x,y+h,x,y,r); p.arcTo(x,y,x+w,y,r); p.closePath(); }
-  function headCell(x,y){ const t=TILEPX, px=x*t, py=y*t; ctx.fillStyle=COL.head; rr(px+1,py+1,t-2,t-2,Math.min(10,t/2)); ctx.fill(); ctx.fillStyle=COL.eye; ctx.beginPath(); ctx.arc(px+t*0.35, py+t*0.40, Math.max(2,t*0.1), 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(px+t*0.65, py+t*0.40, Math.max(2,t*0.1), 0, Math.PI*2); ctx.fill(); }
-  function bodyCell(x,y){ const t=TILEPX, px=x*t, py=y*t; ctx.fillStyle=COL.body; rr(px+1,py+1,t-2,t-2,Math.min(10,t/2)); ctx.fill(); }
-  function drawPixelFood(x,y){ const t=TILEPX, px=x*t, py=y*t; const s=Math.max(8, t-10); const off=(t-s)/2; ctx.fillStyle='#ff3366'; ctx.fillRect(px+off,py+off,s,s); ctx.strokeStyle='#ffffff90'; ctx.strokeRect(px+off+0.5,py+off+0.5,s-1,s-1); }
-  function draw(){
-    const t=TILEPX; ctx.clearRect(0,0,cv.width,cv.height);
-    ctx.strokeStyle=COL.grid; ctx.lineWidth=0.6;
-    for(let x=0;x<=W;x++){ ctx.beginPath(); ctx.moveTo(x*t+0.5,0); ctx.lineTo(x*t+0.5,H*t); ctx.stroke(); }
-    for(let y=0;y<=H;y++){ ctx.beginPath(); ctx.moveTo(0,y*t+0.5); ctx.lineTo(W*t,y*t+0.5); ctx.stroke(); }
-    if(!apple) ensureApple();
-    if(apple){ (foodStyle==='pixel'?drawPixelFood:drawCandy)(apple[0],apple[1]); }
-    if(mail) drawCandy(mail[0],mail[1]);
-    for(let i=0;i<snake.length;i++){ const [x,y]=snake[i]; if(i===0) headCell(x,y); else bodyCell(x,y); }
-    if(over){ msg.textContent = (overReason==='tail' ? 'Game Over ～ 咬到尾巴了' : 'Game Over ～ 撞墙啦'); msg.style.display='block'; } else if(!win){ msg.style.display='none'; }
-  }
-
-  /* ---------- 启动 & BGM 解锁（任意点一下就能开始） ---------- */
-  let started=false;
-  function startGame(){ if(started) return; started=true; startMask.style.display='none'; paused=false; }
-  async function tryStart(e){ if(e){ try{e.preventDefault(); e.stopPropagation();}catch{} } try{ await tryPlayBGM(); }catch{} startGame(); }
-  ['click','touchstart','pointerdown'].forEach(ev=>{ startBtn.addEventListener(ev, tryStart, {passive:false}); });
-  ['click','touchstart','pointerdown'].forEach(ev=>{ startMask.addEventListener(ev, (e)=>{ if(e.target===startMask) tryStart(e); }, {passive:false}); });
-  ['click','touchstart','pointerdown'].forEach(ev=>{
-    document.addEventListener(ev, (e)=>{ if(!started) tryStart(e); }, {passive:false, once:true, capture:true});
-  });
-
-  /* ---------- 初始化 ---------- */
   initState(); fit(); tick();
 })();
 </script>
