@@ -1,4 +1,4 @@
-const CACHE_NAME = 'snake-xy-v650';
+const CACHE_NAME = 'snake-xiaoyou-v660';
 const ASSETS = [
   './',
   './index.html',
@@ -6,7 +6,7 @@ const ASSETS = [
   './icon-192.png',
   './icon-512.png',
   './apple-touch-icon-180.png',
-  './friendship.mp3' // 如果暂时没有也没关系
+  './friendship.mp3' // 可选：不存在也没关系
 ];
 
 self.addEventListener('install', e=>{
@@ -15,7 +15,9 @@ self.addEventListener('install', e=>{
 });
 
 self.addEventListener('activate', e=>{
-  e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE_NAME).map(k=>caches.delete(k)))));
+  e.waitUntil(
+    caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE_NAME).map(k=>caches.delete(k))))
+  );
   self.clients.claim();
 });
 
