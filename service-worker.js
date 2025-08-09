@@ -1,4 +1,4 @@
-const CACHE_NAME = 'snake-pwa-v6-9';
+const CACHE_NAME = 'snake-pwa-v6-10';
 const CORE_ASSETS = ['./','./index.html','./manifest.json','./icon-512.png','./bgm.js'];
 
 self.addEventListener('install', (e) => {

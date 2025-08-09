@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
-<title>粉粉贪吃蛇·小悠特别版 (PWA v6.9)</title>
+<title>粉粉贪吃蛇·小悠特别版 (PWA v6.10)</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#ffd6e6">
 <link rel="apple-touch-icon" href="icon-512.png">
@@ -26,14 +26,13 @@
 
   #gameArea{ height: calc(var(--vh) * (100 - var(--controlsH)) - env(safe-area-inset-top));
              display:flex; align-items:center; justify-content:center; padding:2px var(--gutterX); min-height:80px; width:100vw; }
-  /* 确保舞台宽度 = 视口宽度 - 安全区 - 边距，且不溢出 */
   #stage{ position:relative;
           width: calc(100vw - env(safe-area-inset-left) - env(safe-area-inset-right) - var(--gutterX)*2);
           max-width: calc(100vw - env(safe-area-inset-left) - env(safe-area-inset-right) - var(--gutterX)*2);
           height:100%;
           overflow:hidden;
           display:flex; align-items:center; justify-content:center; }
-  canvas{ max-width: 100%; background:#fff5faCC; backdrop-filter: blur(2px); border-radius:16px; box-shadow:0 8px 28px rgba(255,105,180,.25); touch-action:none; }
+  canvas{ max-width:100%; display:block; background:#fff5faCC; backdrop-filter: blur(2px); border-radius:16px; box-shadow:0 8px 28px rgba(255,105,180,.25); touch-action:none; }
   #hud{ position:absolute; top:6px; left:8px; display:flex; gap:10px; font-size:14px; color:#614d55; }
   #msg{ position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:#ffffffcc; color:#c0396e; padding:10px 14px; border-radius:12px; display:none; box-shadow:0 6px 18px rgba(0,0,0,.08); }
   #win{ position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:#fff0f7; color:#c0396e; padding:12px 16px; border-radius:14px; display:none; box-shadow:0 8px 28px rgba(255,105,180,.25); }
@@ -155,7 +154,6 @@ if ('serviceWorker' in navigator) { window.addEventListener('load', ()=>navigato
   const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
   const scoreEl=document.getElementById('score'), speedEl=document.getElementById('speed');
   const msg=document.getElementById('msg'), winEl=document.getElementById('win');
-  const toast=document.getElementById('toast');
 
   const savedRaw = localStorage.getItem('xy_snake_settings');
   const saved = savedRaw ? JSON.parse(savedRaw) : null;
@@ -180,14 +178,12 @@ if ('serviceWorker' in navigator) { window.addEventListener('load', ()=>navigato
   }
   function fit(){
     const stage=document.getElementById('stage');
-    // 可用宽度严格 = 舞台真实内容宽度（不含滚动条/外边距）
-    const styles = getComputedStyle(stage);
-    const padL = parseFloat(styles.paddingLeft)||0, padR = parseFloat(styles.paddingRight)||0;
-    const gw=stage.clientWidth - padL - padR;
-    const gh=stage.clientHeight;
-    const scale=Math.min(gw/(W*TILE), gh/(H*TILE));
-    const wpx = Math.floor(W*TILE*scale);
-    const hpx = Math.floor(H*TILE*scale);
+    const rect = stage.getBoundingClientRect();
+    const gw = Math.max(0, Math.floor(rect.width));  // EXACT inner width
+    const gh = Math.max(0, Math.floor(rect.height));
+    const scale=Math.min((gw-1)/(W*TILE), (gh-1)/(H*TILE));
+    const wpx = Math.min(gw-1, Math.floor(W*TILE*scale));
+    const hpx = Math.min(gh-1, Math.floor(H*TILE*scale));
     cv.style.width=wpx+'px';
     cv.style.height=hpx+'px';
     setupCanvas();
@@ -204,6 +200,7 @@ if ('serviceWorker' in navigator) { window.addEventListener('load', ()=>navigato
   let snake=[], dir=[1,0], queue=[], len=4;
   let speed=startSpeed, score=0, paused=false, over=false, win=false;
   let apple=null, mail=null, mailTTL=0;
+  let lastAppleAt=0; // for 5s refresh watchdog
 
   function spawnAppleAvoidingSnake(occ){
     for(let t=0;t<2000;t++){
@@ -213,18 +210,20 @@ if ('serviceWorker' in navigator) { window.addEventListener('load', ()=>navigato
     for(let y=0;y<H;y++){ for(let x=0;x<W;x++){ const key=JSON.stringify([x,y]); if(!occ.has(key)) return [x,y]; } }
     return null;
   }
+  function placeAppleNew(avoidSame=true){
+    const occ=new Set(snake.map(JSON.stringify));
+    if(apple) occ.add(JSON.stringify(apple)); // 避免刷回同一个点
+    const pos = spawnAppleAvoidingSnake(occ);
+    if(pos){ apple = pos; lastAppleAt = performance.now(); }
+  }
   function ensureApple(){
-    if(!apple){
-      const occ=new Set(snake.map(JSON.stringify));
-      apple = spawnAppleAvoidingSnake(occ);
-      if(!apple && snake.length >= W*H-1){ win = true; }
-    }
+    if(!apple){ placeAppleNew(false); }
   }
   function initState(){
     const cx=Math.floor(W/2), cy=Math.floor(H/2);
     snake=[[cx,cy]]; dir=[1,0]; queue=[]; len=4; score=0; paused=false; over=false; win=false;
     speed = startSpeed;
-    apple=null; mail=null; mailTTL=0;
+    apple=null; mail=null; mailTTL=0; lastAppleAt=0;
     ensureApple();
     speedEl.textContent='速度: '+speed.toFixed(1);
   }
@@ -287,7 +286,6 @@ if ('serviceWorker' in navigator) { window.addEventListener('load', ()=>navigato
     }
     fit();
   }
-  // 即时预览：滑动就生效
   ctlRange.oninput=()=>{ ctlVal.textContent=ctlRange.value; document.documentElement.style.setProperty('--controlsH', ctlRange.value); };
   liftRange.oninput=()=>{ liftVal.textContent=liftRange.value; document.documentElement.style.setProperty('--controlsLift', liftRange.value); };
   padRange.oninput=()=>{ padVal.textContent=padRange.value; document.documentElement.style.setProperty('--actionsPadRight', padRange.value); };
@@ -308,8 +306,7 @@ if ('serviceWorker' in navigator) { window.addEventListener('load', ()=>navigato
     applySettings(true);
   };
   sfxBtn.onclick=()=>{ sfxOn=!sfxOn; sfxBtn.textContent='音效: '+(sfxOn?'开':'关'); const d = saved || {}; d.sfxOn = sfxOn; localStorage.setItem('xy_snake_settings', JSON.stringify(d)); };
-  bgmBtn.onclick=()=>{ bgmOn=!bgmOn; sfxBtn.blur(); bgmBtn.textContent='音乐: '+(bgmOn?'开':'关'); const d = saved || {}; d.bgmOn = bgmOn; localStorage.setItem('xy_snake_settings', JSON.stringify(d)); if(bgmOn) playBGM(); };
-
+  bgmBtn.onclick=()=>{ bgmOn=!bgmOn; bgmBtn.textContent='音乐: '+(bgmOn?'开':'关'); const d = saved || {}; d.bgmOn = bgmOn; localStorage.setItem('xy_snake_settings', JSON.stringify(d)); if(bgmOn) playBGM(); };
   menu.onclick=()=>{ panel.style.display = (panel.style.display==='block') ? 'none' : 'block'; };
 
   const stage=document.getElementById('stage'); let sx=0,sy=0,moved=false;
@@ -350,13 +347,19 @@ if ('serviceWorker' in navigator) { window.addEventListener('load', ()=>navigato
 
           ensureApple();
 
+          // 5s watchdog：若 5s 内未吃到食物，强制换新位置
+          if(apple && performance.now() - lastAppleAt > 5000){
+            placeAppleNew(true);
+          }
+
           if(apple && head[0]===apple[0] && head[1]===apple[1]){
             len++; score+=10;
             if(speedUp==='on'){ speed=Math.min(14, speed+0.25); }
-            const occ=new Set(snake.map(JSON.stringify));
-            apple = spawnAppleAvoidingSnake(occ);
-            if(!apple && snake.length >= W*H-1){ win = true; }
-            if(!mail && Math.random()<0.06){ mail = spawnAppleAvoidingSnake(occ); mailTTL=500; }
+            placeAppleNew(true);
+            if(!mail && Math.random()<0.06){
+              const occ=new Set(snake.map(JSON.stringify));
+              mail = spawnAppleAvoidingSnake(occ); mailTTL=500;
+            }
             speedEl.textContent='速度: '+speed.toFixed(1);
           }
 
