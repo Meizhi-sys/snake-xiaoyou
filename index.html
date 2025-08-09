@@ -3,14 +3,15 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
-<title>粉粉贪吃蛇·小悠特别版 (PWA v6.1)</title>
+<title>粉粉贪吃蛇·小悠特别版 (PWA v6.3)</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#ffd6e6">
 <link rel="apple-touch-icon" href="icon-512.png">
 <style>
   :root{
-    --vh: 1vh; /* will be replaced by JS using visualViewport */
-    --controlsH: 25; /* percentage of viewport height */
+    --vh: 1vh;                 /* 将由 visualViewport 替换 */
+    --controlsH: 24;           /* 控制区高度百分比（设置可改） */
+    --actionsPadRight: 40;     /* 右下角按钮整体向左的 padding-right 偏移 px（设置可改） */
     --tile: 22;
     --gap: 14px;
   }
@@ -26,23 +27,26 @@
   #msg{ position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:#ffffffcc; color:#c0396e; padding:10px 14px; border-radius:12px; display:none; box-shadow:0 6px 18px rgba(0,0,0,.08); }
   #win{ position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:#fff0f7; color:#c0396e; padding:12px 16px; border-radius:14px; display:none; box-shadow:0 8px 28px rgba(255,105,180,.25); }
 
-  #controls{ height: calc(var(--vh) * var(--controlsH) + env(safe-area-inset-bottom)); position:relative; }
-  #controlsInner{ position:absolute; inset:0; display:grid; grid-template-columns: 1fr 1fr; }
+  /* 控制区 */
+  #controls{ height: calc(var(--vh) * var(--controlsH)); position:relative; }
+  #controlsInner{ position:absolute; left:0; right:0; top:0; bottom:0; display:grid; grid-template-columns: 1fr 1fr; padding-bottom: calc(env(safe-area-inset-bottom) + 12px); }
   #dpadWrap{ display:flex; align-items:center; justify-content:center; }
   #dpad{ display:grid; gap: var(--gap); grid-template-areas: ". up ." "left . right" ". down ."; }
   .btn{ width:86px; height:86px; border-radius:18px; border:1px solid #ffc1d6; background:#ffe3ee; color:#b14a76; font-size:22px; box-shadow:0 4px 12px rgba(255,105,180,.18); }
   .btn:active{ transform:scale(.97); }
   @media (max-width:380px){ .btn{ width:68px; height:68px; } }
-  #actionsWrap{ display:flex; align-items:flex-end; justify-content:flex-end; padding:14px; gap:12px; }
-  #pause,#restart{ width:64px; height:64px; border-radius:16px; background:#ffd1e2; border:1px solid #ffb7cf; font-size:20px; color:#a33e6a; }
+  #actionsWrap{ display:flex; align-items:flex-end; justify-content:flex-end; padding:14px; padding-right: calc(env(safe-area-inset-right) + var(--actionsPadRight)*1px); gap:12px; }
 
-  /* settings / debug */
+  /* 设置面板 */
   #settings{ position:absolute; top:10px; right:10px; display:flex; gap:8px; }
   .chip{ padding:6px 10px; border-radius:14px; background:#ffcee0; border:1px solid #ffb7cf; color:#a33e6a; font-size:12px; }
-  #panel{ position:absolute; top:44px; right:10px; background:#fff7fb; border:1px solid #ffd1e2; border-radius:12px; padding:10px; box-shadow:0 8px 24px rgba(0,0,0,.08); display:none; }
+  #panel{ position:absolute; top:44px; right:10px; background:#fff7fb; border:1px solid #ffd1e2; border-radius:12px; padding:10px; box-shadow:0 8px 24px rgba(0,0,0,.08); display:none; min-width:260px; }
   #panel label{ font-size:12px; display:block; margin:6px 0 2px; }
   #panel input[type=range]{ width:240px; max-width:56vw; }
-  #debug{ position:absolute; left:10px; bottom:10px; font-size:12px; color:#8a6a75; opacity:.8; }
+  #panel input[type=url]{ width:240px; max-width:56vw; padding:6px 8px; border-radius:8px; border:1px solid #ffc9dc; }
+
+  /* 小提示气泡 */
+  #toast{ position:fixed; left:50%; bottom: calc(env(safe-area-inset-bottom) + 80px); transform:translateX(-50%); background:#000000a0; color:#fff; padding:8px 12px; border-radius:10px; font-size:12px; display:none; z-index:9999; }
 </style>
 </head>
 <body>
@@ -55,21 +59,23 @@
       <div id="win">💖 恭喜通关！小悠把你抱下线啦～</div>
 
       <div id="settings">
-        <button class="chip" id="menu">设置</button>
+        <button class="chip" id="menu">⚙️ 设置</button>
         <button class="chip" id="sfx">音效: 开</button>
         <button class="chip" id="bgm">音乐: 开</button>
       </div>
       <div id="panel">
-        <label>按键区高度（% 屏幕）：<span id="ctlVal">25</span>%</label>
-        <input id="ctlRange" type="range" min="18" max="35" step="1" value="25"/>
-        <label>蛇速起始值：</label>
-        <input id="spdRange" type="range" min="5" max="10" step="0.5" value="7"/>
-        <div style="margin-top:8px; display:flex; gap:6px;">
-          <button class="chip" id="apply">应用</button>
+        <label>按键区高度（% 屏幕）：<span id="ctlVal">24</span>%</label>
+        <input id="ctlRange" type="range" min="18" max="35" step="1" value="24"/>
+        <label>右下角按钮向内偏移（px）：<span id="padVal">40</span></label>
+        <input id="padRange" type="range" min="0" max="80" step="2" value="40"/>
+        <label style="margin-top:8px;">自定义 BGM（MP3 直链，可选）：</label>
+        <input id="musicURL" type="url" placeholder="https://.../happy.mp3"/>
+        <div style="margin-top:8px; display:flex; gap:6px; flex-wrap:wrap;">
+          <button class="chip" id="apply">应用并保存</button>
           <button class="chip" id="close">关闭</button>
+          <button class="chip" id="reset">重置默认</button>
         </div>
       </div>
-      <div id="debug"></div>
     </div>
   </div>
 
@@ -91,19 +97,17 @@
   </div>
 </div>
 
+<div id="toast">首次点一下屏幕以开启音乐 🎵</div>
+
 <script>
 // SW
 if ('serviceWorker' in navigator) { window.addEventListener('load', ()=>navigator.serviceWorker.register('service-worker.js')); }
-
-// Fix --vh based on visualViewport for iOS 16/17/18
+// visualViewport -> --vh
 (function(){
   function setVH(){
-    const vh = (window.visualViewport ? window.visualViewport.height : window.innerHeight) / 100;
-    document.documentElement.style.setProperty('--vh', vh + 'px');
-    const dbg = document.getElementById('debug');
-    if(dbg){
-      dbg.textContent = 'vw:'+Math.round(window.innerWidth)+' vh:'+Math.round((window.visualViewport?window.visualViewport.height:window.innerHeight))+' dpr:'+window.devicePixelRatio;
-    }
+    const vv = window.visualViewport;
+    const h = (vv ? vv.height : window.innerHeight);
+    document.documentElement.style.setProperty('--vh', (h/100) + 'px');
   }
   setVH();
   window.addEventListener('resize', setVH);
@@ -116,6 +120,14 @@ if ('serviceWorker' in navigator) { window.addEventListener('load', ()=>navigato
   const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
   const scoreEl=document.getElementById('score'), speedEl=document.getElementById('speed');
   const msg=document.getElementById('msg'), winEl=document.getElementById('win');
+  const toast=document.getElementById('toast');
+
+  // Load persisted settings
+  const saved = JSON.parse(localStorage.getItem('xy_snake_settings')||'{}');
+  if(saved.controlsH){ document.documentElement.style.setProperty('--controlsH', saved.controlsH); }
+  if(saved.actionsPadRight){ document.documentElement.style.setProperty('--actionsPadRight', saved.actionsPadRight); }
+  let startSpeed = saved.startSpeed ? parseFloat(saved.startSpeed) : 7;
+  let customURL = saved.musicURL || '';
 
   // DPR crisp canvas
   function setupCanvas(){
@@ -140,25 +152,48 @@ if ('serviceWorker' in navigator) { window.addEventListener('load', ()=>navigato
   const COL={ grid:'#ffffff33', apple:'#ff6b88', mail:'#ff5fa3', body:'#ff9fbc', head:'#ff6fa5', eye:'#4c2d3a' };
 
   // --- Audio ---
-  const AC=window.AudioContext||window.webkitAudioContext; let ac, master, sfxOn=true, bgmOn=true; let bgmTimer=null;
+  const AC=window.AudioContext||window.webkitAudioContext; let ac, master, sfxOn=true, bgmOn=true; let bgmTimer=null, userAudio=null;
   function ensureAudio(){ if(!ac){ ac=new AC(); master=ac.createGain(); master.gain.value=0.6; master.connect(ac.destination);} }
   function beep(f=660,d=0.06,t='triangle',g=0.18){ if(!sfxOn||!ac) return; const o=ac.createOscillator(), gNode=ac.createGain(); o.type=t; o.frequency.value=f; gNode.gain.value=g; o.connect(gNode); gNode.connect(master); const t0=ac.currentTime; o.start(t0); gNode.gain.exponentialRampToValueAtTime(0.001,t0+d); o.stop(t0+d); }
   function startDefaultBGM(){
-    if(!bgmOn||!ac||bgmTimer) return;
+    if(!bgmOn||!ac||bgmTimer || userAudio) return;
     let t=ac.currentTime+0.05;
     function bar(){
-      const seq=[261.63,329.63,392.00,523.25];
-      for(let i=0;i<seq.length;i++){ const o=ac.createOscillator(); o.type='triangle'; o.frequency.value=seq[i]; const g=ac.createGain(); g.gain.value=0.05; o.connect(g); g.connect(master); o.start(t+i*0.22); g.gain.exponentialRampToValueAtTime(0.0001, t+i*0.22+0.20); o.stop(t+i*0.22+0.22); }
-      t+=0.9;
-      if(bgmOn){ bgmTimer=setTimeout(bar, 850); }
+      // 两小节可爱律动：C-G-Am-F 进行 + 轻点
+      const chords=[[261.63,392.00],[196.00,392.00],[220.00,440.00],[174.61,349.23]];
+      for(let k=0;k<chords.length;k++){
+        const [f1,f2]=chords[k];
+        const o1=ac.createOscillator(), o2=ac.createOscillator();
+        const g=ac.createGain(); g.gain.value=0.05; o1.type='triangle'; o2.type='sine';
+        o1.frequency.value=f1; o2.frequency.value=f2;
+        o1.connect(g); o2.connect(g); g.connect(master);
+        o1.start(t+k*0.6); o2.start(t+k*0.6);
+        g.gain.setValueAtTime(0.05, t+k*0.6);
+        g.gain.exponentialRampToValueAtTime(0.0001, t+k*0.6+0.55);
+        o1.stop(t+k*0.6+0.6); o2.stop(t+k*0.6+0.6);
+        // 轻击
+        const click=ac.createOscillator(), cg=ac.createGain();
+        click.type='square'; click.frequency.value=880; cg.gain.value=0.02;
+        click.connect(cg); cg.connect(master);
+        click.start(t+k*0.6); cg.gain.exponentialRampToValueAtTime(0.0001, t+k*0.6+0.08); click.stop(t+k*0.6+0.1);
+      }
+      t+=2.4;
+      if(bgmOn && !userAudio){ bgmTimer=setTimeout(bar, 2200); }
     }
     bar();
   }
-  function stopBGM(){ if(bgmTimer){ clearTimeout(bgmTimer); bgmTimer=null; } }
+  function stopBGM(){ if(bgmTimer){ clearTimeout(bgmTimer); bgmTimer=null; } if(userAudio){ try{userAudio.pause();}catch(e){} } }
+  function applyUserMusic(url){
+    try{
+      stopBGM();
+      userAudio=new Audio(url); userAudio.loop=true; userAudio.volume=0.35;
+      userAudio.play().catch(()=>{});
+    }catch(e){ console.log('music error',e); }
+  }
 
-  // --- Game with adjustable speed ---
+  // --- Game ---
   let snake=[[Math.floor(W/2), Math.floor(H/2)]], dir=[1,0], queue=[], len=4;
-  let speed=7, score=0, paused=false, over=false, win=false;
+  let speed=startSpeed, score=0, paused=false, over=false, win=false;
   let apple=rndEmpty(new Set(snake.map(JSON.stringify)));
   let mail=null, mailTTL=0;
 
@@ -166,7 +201,10 @@ if ('serviceWorker' in navigator) { window.addEventListener('load', ()=>navigato
   function setDir(nx,ny){ if(nx===-dir[0] && ny===-dir[1]) return; queue.push([nx,ny]); if(sfxOn) beep(240,0.05,'square',0.06); }
 
   const V=(ms)=>{ try{ if('vibrate' in navigator) navigator.vibrate(ms);}catch(e){} };
-  ['touchstart','mousedown'].forEach(ev=>window.addEventListener(ev,()=>{ ensureAudio(); if(bgmOn){ startDefaultBGM(); }},{once:true}));
+  function showToast(){ toast.style.display='block'; setTimeout(()=>toast.style.display='none', 2000); }
+  // Prompt to enable music
+  window.addEventListener('load', ()=>{ if(bgmOn) showToast(); });
+  ['touchstart','mousedown'].forEach(ev=>window.addEventListener(ev,()=>{ ensureAudio(); if(bgmOn){ if(customURL){ applyUserMusic(customURL); } else { startDefaultBGM(); } }},{once:true}));
 
   document.getElementById('pause').onclick=()=>{ ensureAudio(); paused=!paused; V(8); };
   document.getElementById('restart').onclick=()=>{ ensureAudio(); reset(); V(15); };
@@ -178,41 +216,80 @@ if ('serviceWorker' in navigator) { window.addEventListener('load', ()=>navigato
   // Settings panel
   const menu=document.getElementById('menu'), panel=document.getElementById('panel');
   const ctlRange=document.getElementById('ctlRange'), ctlVal=document.getElementById('ctlVal');
-  const spdRange=document.getElementById('spdRange');
-  document.getElementById('sfx').onclick=()=>{ sfxOn=!sfxOn; document.getElementById('sfx').textContent='音效: '+(sfxOn?'开':'关'); };
-  document.getElementById('bgm').onclick=()=>{ bgmOn=!bgmOn; document.getElementById('bgm').textContent='音乐: '+(bgmOn?'开':'关'); if(!bgmOn){ stopBGM(); } else { ensureAudio(); startDefaultBGM(); } };
+  const padRange=document.getElementById('padRange'), padVal=document.getElementById('padVal');
+  const musicURL=document.getElementById('musicURL');
+  const sfxBtn=document.getElementById('sfx'), bgmBtn=document.getElementById('bgm');
+  // init inputs with saved
+  ctlRange.value = saved.controlsH || 24;
+  ctlVal.textContent = ctlRange.value;
+  padRange.value = saved.actionsPadRight || 40;
+  padVal.textContent = padRange.value;
+  if(customURL) musicURL.value = customURL;
+  sfxBtn.textContent = '音效: ' + (saved.sfxOn===false ? '关':'开');
+  if(saved.sfxOn===false) sfxOn=false;
+  bgmBtn.textContent = '音乐: ' + (saved.bgmOn===false ? '关':'开');
+  if(saved.bgmOn===false) bgmOn=false;
+
+  function applySettings(persist){
+    document.documentElement.style.setProperty('--controlsH', ctlRange.value);
+    document.documentElement.style.setProperty('--actionsPadRight', padRange.value);
+    startSpeed = parseFloat(saved.startSpeed || speed);
+    if(persist){
+      const data = {
+        controlsH: ctlRange.value,
+        actionsPadRight: padRange.value,
+        startSpeed: startSpeed,
+        musicURL: musicURL.value.trim(),
+        sfxOn: sfxOn, bgmOn: bgmOn
+      };
+      localStorage.setItem('xy_snake_settings', JSON.stringify(data));
+    }
+    if(musicURL.value.trim()){
+      customURL = musicURL.value.trim();
+    }
+    fit();
+  }
+
+  sfxBtn.onclick=()=>{ sfxOn=!sfxOn; sfxBtn.textContent='音效: '+(sfxOn?'开':'关'); localStorage.setItem('xy_snake_settings', JSON.stringify({...saved, sfxOn})); };
+  bgmBtn.onclick=()=>{ bgmOn=!bgmOn; bgmBtn.textContent='音乐: '+(bgmOn?'开':'关'); localStorage.setItem('xy_snake_settings', JSON.stringify({...saved, bgmOn})); if(!bgmOn){ stopBGM(); if(userAudio){ try{userAudio.pause();}catch(e){} } } };
   menu.onclick=()=>{ panel.style.display = (panel.style.display==='block') ? 'none' : 'block'; };
   ctlRange.oninput=()=>{ ctlVal.textContent=ctlRange.value; };
-  document.getElementById('apply').onclick=()=>{
-    document.documentElement.style.setProperty('--controlsH', ctlRange.value);
-    speed = parseFloat(spdRange.value);
-    speedEl.textContent = '速度: '+speed.toFixed(1);
-    panel.style.display='none';
-    fit();
-  };
+  padRange.oninput=()=>{ padVal.textContent=padRange.value; };
+  document.getElementById('apply').onclick=()=>{ applySettings(true); panel.style.display='none'; };
   document.getElementById('close').onclick=()=>{ panel.style.display='none'; };
+  document.getElementById('reset').onclick=()=>{
+    localStorage.removeItem('xy_snake_settings');
+    ctlRange.value=24; ctlVal.textContent='24';
+    padRange.value=40; padVal.textContent='40';
+    musicURL.value=''; customURL='';
+    sfxOn=true; bgmOn=true; sfxBtn.textContent='音效: 开'; bgmBtn.textContent='音乐: 开';
+    applySettings(true);
+  };
+  // Apply once on boot
+  applySettings(false);
 
   function reset(){
     snake=[[Math.floor(W/2), Math.floor(H/2)]]; dir=[1,0]; queue=[]; len=4;
-    score=0; paused=false; over=false; win=false;
+    speed=startSpeed; score=0; paused=false; over=false; win=false;
     apple=rndEmpty(new Set(snake.map(JSON.stringify))); mail=null; mailTTL=0;
     msg.style.display='none'; winEl.style.display='none';
+    speedEl.textContent='速度: '+speed.toFixed(1);
   }
 
   function tick(){
     if(!paused && !over && !win){
       while(queue.length){ const [nx,ny]=queue.shift(); if(!(nx===-dir[0] && ny===-dir[1])){ dir=[nx,ny]; break; } }
       const [hx,hy]=snake[0]; const nx=hx+dir[0], ny=hy+dir[1];
-      if(nx<0||ny<0||nx>=W||ny>=H){ over=true; V(120); ensureAudio(); beep(120,0.25,'sawtooth',0.3); }
+      if(nx<0||ny<0||nx>=W||ny>=H){ over=true; vibe(120); ensureAudio(); beep(120,0.25,'sawtooth',0.3); }
       else{
         const head=[nx,ny];
-        for(let i=0;i<snake.length;i++){ if(snake[i][0]===head[0]&&snake[i][1]===head[1]){ over=true; V(120); ensureAudio(); beep(120,0.25,'sawtooth',0.3); break; } }
+        for(let i=0;i<snake.length;i++){ if(snake[i][0]===head[0]&&snake[i][1]===head[1]){ over=true; vibe(120); ensureAudio(); beep(120,0.25,'sawtooth',0.3); break; } }
         if(!over){
           snake.unshift(head);
           if(snake.length>len) snake.pop();
-          if(mail && head[0]===mail[0] && head[1]===mail[1]){ win=true; V(60); ensureAudio(); beep(880,0.15,'triangle',0.25); setTimeout(()=>beep(1175,0.15,'triangle',0.25),120); }
+          if(mail && head[0]===mail[0] && head[1]===mail[1]){ win=true; vibe(60); ensureAudio(); beep(880,0.15,'triangle',0.25); setTimeout(()=>beep(1175,0.15,'triangle',0.25),120); }
           else if(head[0]===apple[0] && head[1]===apple[1]){
-            len++; score+=10; speed=Math.min(14, speed+0.25); V(30); ensureAudio();
+            len++; score+=10; speed=Math.min(14, speed+0.25); vibe(30); ensureAudio();
             beep(523.25,0.06,'triangle',0.16); setTimeout(()=>beep(659.25,0.06,'triangle',0.16),70); setTimeout(()=>beep(783.99,0.07,'triangle',0.16),140);
             const occ=new Set(snake.map(JSON.stringify));
             apple=rndEmpty(occ);
@@ -227,6 +304,7 @@ if ('serviceWorker' in navigator) { window.addEventListener('load', ()=>navigato
     setTimeout(tick, 1000/Math.max(5, speed));
   }
 
+  function vibe(ms){ try{ if('vibrate' in navigator) navigator.vibrate(ms);}catch(e){} }
   function rr(x,y,w,h,r){ r=Math.min(r,w/2,h/2); ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
   function cell(x,y,color,rad=8){ const px=x*TILE, py=y*TILE; ctx.fillStyle=color; rr(px+1,py+1,TILE-2,TILE-2,rad); ctx.fill(); }
   function head(x,y){
@@ -257,7 +335,6 @@ if ('serviceWorker' in navigator) { window.addEventListener('load', ()=>navigato
   }
 
   tick();
-})();
-</script>
+})();</script>
 </body>
 </html>
