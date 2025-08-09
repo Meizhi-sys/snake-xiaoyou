@@ -1,256 +1,195 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
-<title>Snake — Xiaoyou Edition (PWA v3)</title>
+<title>粉粉贪吃蛇·小悠特别版 (PWA v4)</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#0f1219">
+<meta name="theme-color" content="#ffd6e6">
 <link rel="apple-touch-icon" href="icon-512.png">
 <style>
-  :root{ --btn:72px; --gap:14px; --radius:12px; }
-  @media (max-width:360px){ :root{ --btn:60px; --gap:10px; } }
-  html, body { margin:0; height:100%; background:#0f1219; color:#eaeaea; font-family:-apple-system, system-ui, Segoe UI, Roboto, Helvetica, Arial;}
-  #wrap { display:flex; flex-direction:column; height:100%; }
-  #topbar { padding:10px 14px; font-size:14px; display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
-  #topbar span { opacity:.92 }
-  .tag { padding:2px 8px; border-radius:8px; background:#2a3244; color:#cfd8ff; font-size:12px; }
-  #game { flex:1; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; }
-  #bg {
-    position:absolute; inset:0; z-index:0;
-    background: radial-gradient(1200px 600px at 20% 10%, #1b2130 0%, #0f1219 60%), 
-                radial-gradient(900px 600px at 80% 80%, #172030 0%, #0f1219 70%);
-    filter: saturate(1.1);
+  :root{ --padH: 25vh; --tile: 22; --radius: 12px; }
+  html, body { margin:0; height:100%; background:#ffd6e6; color:#5a4750; font-family: -apple-system, system-ui, Segoe UI, Roboto, Helvetica, Arial; }
+  /* Soft pink gradient + subtle bow pattern */
+  body::before{
+    content:''; position:fixed; inset:0; z-index:-2;
+    background: linear-gradient(180deg, #ffd6e6 0%, #ffe9f1 100%);
   }
-  #grid {
-    position:absolute; inset:0; z-index:0; opacity:.08;
-    background-image: linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px);
-    background-size: 20px 20px, 20px 20px;
-    background-position: -1px -1px;
+  body::after{
+    content:''; position:fixed; inset:0; z-index:-1; opacity:.25;
+    background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScxMjAnIGhlaWdodD0nMTIwJyB2aWV3Qm94PScwIDAgMTIwIDEyMCc+CiAgPGcgZmlsbD0nbm9uZScgc3Ryb2tlPSdyZ2JhKDI1NSwxMjAsMTYwLDAuMjUpJyBzdHJva2Utd2lkdGg9JzMnPgogICAgPHBhdGggZD0nTTIwLDYwIFE0MCwyMCA2MCw0MCBRODAsMjAgMTAwLDYwIFE4MCwxMDAgNjAsODAgUTQwLDEwMCAyMCw2MCBaJy8+CiAgICA8Y2lyY2xlIGN4PSc2MCcgY3k9JzYwJyByPSc2JyBmaWxsPSdyZ2JhKDI1NSwxMjAsMTYwLDAuMjUpJy8+CiAgPC9nPgo8L3N2Zz4=");
+    background-size: 140px 140px; background-repeat: repeat;
     pointer-events:none;
   }
-  canvas { position:relative; z-index:1; background: transparent; max-width: 96vw; max-height: 70vh; border-radius:var(--radius); box-shadow:0 8px 28px rgba(0,0,0,.35); }
-  #pad { position:absolute; inset:0; z-index:2; touch-action:none; }
-  #msg { position:absolute; inset:auto 0 calc(var(--btn) + 24px) 0; text-align:center; pointer-events:none; font-size:14px; color:#ffc5c5; z-index:3; }
-  #controls { position:absolute; inset:auto 0 8px 0; z-index:4; display:flex; justify-content:space-between; align-items:flex-end; padding:0 10px; }
-  .cluster { display:grid; gap: var(--gap); }
-  #dpad { grid-template-areas: ". up ." "left . right" ". down ."; }
-  .btn {
-    width: var(--btn); height: var(--btn);
-    background:#1b2130; color:#eaeaea; border:1px solid #2a3244; border-radius:14px;
-    display:flex; align-items:center; justify-content:center; font-size:22px;
-  }
-  .btn:active { transform: scale(.97); }
-  #actions { grid-template-columns: repeat(4, 1fr); }
-  #actions .btn { font-size:18px; width: calc(var(--btn)*0.9); height: calc(var(--btn)*0.9); }
+
+  #wrap { display:flex; flex-direction:column; height:100%; }
+  /* Game area (top 75%) */
+  #gameArea { height: calc(100vh - var(--padH)); display:flex; align-items:center; justify-content:center; padding:10px; }
+  #stage { position:relative; width: 96vw; max-width: 860px; height: 100%; display:flex; align-items:center; justify-content:center; }
+  canvas { background: #fff5faAA; backdrop-filter: blur(2px); border-radius:16px; box-shadow: 0 8px 28px rgba(255,105,180,.25); }
+  #hud { position:absolute; top:10px; left:12px; display:flex; gap:12px; font-size:14px; color:#614d55; }
+  #msg { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:#ffffffcc; color:#c0396e; padding:10px 14px; border-radius:12px; display:none; box-shadow:0 6px 18px rgba(0,0,0,.08); }
+  #win { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:#fff0f7; color:#c0396e; padding:12px 16px; border-radius:14px; display:none; box-shadow:0 8px 28px rgba(255,105,180,.25); }
+
+  /* Control pad area (bottom 25%) */
+  #controls { height: var(--padH); position:relative; }
+  #controlsInner { position:absolute; inset:0; display:grid; grid-template-columns: 1fr 1fr; }
+  /* Left: D-pad centered */
+  #dpadWrap { display:flex; align-items:center; justify-content:center; }
+  #dpad { display:grid; gap:14px;
+           grid-template-areas: ". up ." "left . right" ". down ."; }
+  .btn { width:80px; height:80px; border-radius:18px; border:1px solid #ffc1d6; background:#ffe3ee; color:#b14a76; font-size:22px; box-shadow:0 4px 12px rgba(255,105,180,.18);}
+  .btn:active { transform:scale(.97); }
+  @media (max-width:380px){ .btn{ width:64px; height:64px; } }
+
+  /* Right: Pause/Restart bottom-right */
+  #actionsWrap { display:flex; align-items:flex-end; justify-content:flex-end; padding:14px; gap:12px; }
+  #pause, #restart { width:64px; height:64px; border-radius:16px; background:#ffd1e2; border:1px solid #ffb7cf; font-size:20px; color:#a33e6a; }
+
+  .tag { padding:2px 8px; border-radius:8px; background:#ffcee0; color:#a33e6a; font-size:12px; }
 </style>
 </head>
 <body>
 <div id="wrap">
-  <div id="topbar">
-    <span class="tag">PWA v3</span>
-    <span id="score">Score: 0</span>
-    <span id="speed">Speed: 10</span>
-    <span id="tip">Swipe or use large controls · Share → Add to Home Screen</span>
+  <div id="gameArea">
+    <div id="stage">
+      <canvas id="cv" width="726" height="528"></canvas>
+      <div id="hud"><span class="tag">v4</span><span id="score">分数: 0</span><span id="speed">速度: 10</span></div>
+      <div id="msg"></div>
+      <div id="win">💖 恭喜通关！小悠把你抱下线啦～</div>
+    </div>
   </div>
-  <div id="game">
-    <div id="bg"></div>
-    <div id="grid"></div>
-    <canvas id="cv" width="660" height="480"></canvas>
-    <div id="pad"></div>
-    <div id="msg"></div>
-    <div id="controls">
-      <div class="cluster" id="dpad">
-        <button class="btn" id="up"    style="grid-area: up;">↑</button>
-        <button class="btn" id="left"  style="grid-area: left;">←</button>
-        <button class="btn" id="right" style="grid-area: right;">→</button>
-        <button class="btn" id="down"  style="grid-area: down;">↓</button>
+  <div id="controls">
+    <div id="controlsInner">
+      <div id="dpadWrap">
+        <div id="dpad">
+          <button class="btn" id="up"    style="grid-area:up;">↑</button>
+          <button class="btn" id="left"  style="grid-area:left;">←</button>
+          <button class="btn" id="right" style="grid-area:right;">→</button>
+          <button class="btn" id="down"  style="grid-area:down;">↓</button>
+        </div>
       </div>
-      <div class="cluster" id="actions">
-        <button class="btn" id="pause">❚❚</button>
-        <button class="btn" id="restart">↻</button>
-        <button class="btn" id="sfx">SFX:on</button>
-        <button class="btn" id="bgm">BGM:on</button>
+      <div id="actionsWrap">
+        <button id="pause">⏸</button>
+        <button id="restart">🔄</button>
       </div>
     </div>
   </div>
 </div>
+
 <script>
-// Register updated SW (v3)
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => { navigator.serviceWorker.register('service-worker.js'); });
-}
+if ('serviceWorker' in navigator) { window.addEventListener('load', ()=>navigator.serviceWorker.register('service-worker.js')); }
 </script>
 <script>
-(function(){
-  const TILE=20, W=33, H=22;
-  const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
-  const scoreEl=document.getElementById('score'), speedEl=document.getElementById('speed'), msg=document.getElementById('msg'), pad=document.getElementById('pad');
+(function(){ 'use strict';
+  const TILE=22, W=30, H=22; // grid
+  const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+  const scoreEl = document.getElementById('score'), speedEl = document.getElementById('speed');
+  const msg = document.getElementById('msg'), winEl = document.getElementById('win');
 
   function fit(){
-    const vw = Math.min(window.innerWidth*0.96, 820);
-    const vh = Math.min(window.innerHeight*0.70, 560);
-    const scale = Math.min(vw/(W*TILE), vh/(H*TILE));
+    const stage = document.getElementById('stage');
+    const gh = stage.clientHeight, gw = stage.clientWidth;
+    const scale = Math.min(gw/(W*TILE), gh/(H*TILE));
     cv.style.width = (W*TILE*scale)+'px';
-    cv.style.height = (H*TILE*scale)+'px';
+    cv.style.height= (H*TILE*scale)+'px';
   }
   window.addEventListener('resize', fit); fit();
 
-  // colors
-  const SNAKE='#46dc85', HEAD='#78ffb2', APPLE='#f05a5a';
+  const COL = { grid:'#ffffff33', apple:'#ff6b88', mail:'#ff5fa3', body:'#ff9fbc', head:'#ff6fa5', eye:'#4c2d3a' };
 
-  // --- WebAudio (SFX + BGM) ---
-  const AudioCtx = window.AudioContext || window.webkitAudioContext;
-  let actx, masterGain, sfxOn = true, bgmOn = true, bgm = null;
+  // Audio (SFX)
+  const AC = window.AudioContext||window.webkitAudioContext; let ac, gain;
+  function ensureAudio(){ if(!ac){ ac=new AC(); gain=ac.createGain(); gain.gain.value=0.5; gain.connect(ac.destination);} }
+  function beep(f=660,d=0.06,t='triangle',g=0.2){ if(!ac) return; const o=ac.createOscillator(),ga=ac.createGain(); o.type=t; o.frequency.value=f; ga.gain.value=g; o.connect(ga); ga.connect(gain); const now=ac.currentTime; o.start(now); ga.gain.exponentialRampToValueAtTime(0.001, now+d); o.stop(now+d); }
 
-  function ensureAudio(){
-    if(!actx){
-      actx = new AudioCtx();
-      masterGain = actx.createGain(); masterGain.connect(actx.destination);
-      masterGain.gain.value = 0.6;
-    }
-    if(bgmOn && !bgm){ startBGM(); }
-  }
-  function beep(freq=440, dur=0.08, type='sine', gain=0.2){
-    if(!sfxOn || !actx) return;
-    const o = actx.createOscillator(), g = actx.createGain();
-    o.type = type; o.frequency.value = freq;
-    g.gain.value = gain; o.connect(g); g.connect(masterGain);
-    const t = actx.currentTime;
-    o.start(t); o.stop(t+dur);
-    g.gain.setValueAtTime(gain, t);
-    g.gain.exponentialRampToValueAtTime(0.001, t+dur);
-  }
-  function startBGM(){
-    if(!actx || !bgmOn) return;
-    const o1 = actx.createOscillator(), o2 = actx.createOscillator();
-    const g = actx.createGain(); g.gain.value = 0.06;
-    o1.type='triangle'; o2.type='sine';
-    o1.frequency.value = 196; // G3
-    o2.frequency.value = 261.63; // C4
-    o1.connect(g); o2.connect(g); g.connect(masterGain);
-    o1.start(); o2.start();
-    bgm = {o1,o2,g};
-  }
-  function stopBGM(){
-    if(bgm){
-      try{ bgm.o1.stop(); bgm.o2.stop(); }catch(e){}
-      bgm = null;
-    }
-  }
-
-  // state
   let snake=[[Math.floor(W/2), Math.floor(H/2)]], dir=[1,0], queue=[], len=4;
-  let speed=10, score=0, paused=false, over=false;
+  let speed=10, score=0, paused=false, over=false, win=false;
   let apple = rndEmpty(new Set(snake.map(JSON.stringify)));
+  let mail = null, mailTTL = 0;
 
-  function vibrate(ms){ try{ if('vibrate' in navigator) navigator.vibrate(ms);}catch(e){} }
-  function rndEmpty(occ){
-    while(true){
-      const c=[Math.floor(Math.random()*W), Math.floor(Math.random()*H)];
-      if(!occ.has(JSON.stringify(c))) return c;
-    }
-  }
-  function drawRect(x,y,color,r=5){
-    const px=x*TILE, py=y*TILE;
-    const w=TILE-1, h=TILE-1;
-    ctx.fillStyle=color;
-    roundRect(ctx, px, py, w, h, r); ctx.fill();
-  }
-  function roundRect(ctx, x, y, w, h, r){
-    r=Math.min(r, w/2, h/2);
-    ctx.beginPath();
-    ctx.moveTo(x+r, y);
-    ctx.arcTo(x+w, y,   x+w, y+h, r);
-    ctx.arcTo(x+w, y+h, x,   y+h, r);
-    ctx.arcTo(x,   y+h, x,   y,   r);
-    ctx.arcTo(x,   y,   x+w, y,   r);
-    ctx.closePath();
-  }
-  function setDir(nx,ny){
-    if(nx===-dir[0] && ny===-dir[1]) return;
-    queue.push([nx,ny]);
-    beep(220, 0.05, 'square', 0.07);
-  }
+  function rndEmpty(occ){ while(true){ const c=[Math.floor(Math.random()*W), Math.floor(Math.random()*H)]; if(!occ.has(JSON.stringify(c))) return c; } }
+  function setDir(nx,ny){ if(nx===-dir[0] && ny===-dir[1]) return; queue.push([nx,ny]); }
 
-  // big buttons
-  document.getElementById('up').onclick = ()=>{ ensureAudio(); setDir(0,-1); vibrate(10); };
-  document.getElementById('down').onclick = ()=>{ ensureAudio(); setDir(0,1); vibrate(10); };
-  document.getElementById('left').onclick = ()=>{ ensureAudio(); setDir(-1,0); vibrate(10); };
-  document.getElementById('right').onclick = ()=>{ ensureAudio(); setDir(1,0); vibrate(10); };
-  document.getElementById('pause').onclick = ()=>{ ensureAudio(); paused=!paused; vibrate(8); };
-  document.getElementById('restart').onclick = ()=>{ ensureAudio(); reset(); vibrate(15); };
-  document.getElementById('sfx').onclick = (e)=>{
-    ensureAudio(); sfxOn=!sfxOn; e.target.textContent = 'SFX:'+(sfxOn?'on':'off'); vibrate(8);
-  };
-  document.getElementById('bgm').onclick = (e)=>{
-    ensureAudio(); bgmOn=!bgmOn; e.target.textContent = 'BGM:'+(bgmOn?'on':'off'); 
-    if(bgmOn){ startBGM(); } else { stopBGM(); }
-    vibrate(8);
-  };
+  const V = (ms)=>{ try{ if('vibrate' in navigator) navigator.vibrate(ms);}catch(e){} };
+  const up=document.getElementById('up'),down=document.getElementById('down'),left=document.getElementById('left'),right=document.getElementById('right');
+  document.getElementById('pause').onclick=()=>{ ensureAudio(); paused=!paused; V(8); };
+  document.getElementById('restart').onclick=()=>{ ensureAudio(); reset(); V(15); };
+  up.onclick=()=>{ ensureAudio(); setDir(0,-1); V(10); };
+  down.onclick=()=>{ ensureAudio(); setDir(0,1); V(10); };
+  left.onclick=()=>{ ensureAudio(); setDir(-1,0); V(10); };
+  right.onclick=()=>{ ensureAudio(); setDir(1,0); V(10); };
 
-  // Start audio on first interaction (iOS policy)
-  window.addEventListener('touchstart', ensureAudio, {once:true});
-  window.addEventListener('mousedown', ensureAudio, {once:true});
-
-  // swipe input
+  const stage = document.getElementById('stage');
   let sx=0, sy=0, moved=false;
-  pad.addEventListener('touchstart', e=>{ const t=e.touches[0]; sx=t.clientX; sy=t.clientY; moved=false; }, {passive:true});
-  pad.addEventListener('touchmove', e=>{ moved=true; }, {passive:true});
-  pad.addEventListener('touchend', e=>{
-    if(!moved) return;
-    ensureAudio();
-    const t=e.changedTouches[0]; const dx=t.clientX - sx, dy=t.clientY - sy;
-    if(Math.abs(dx) > Math.abs(dy)){ setDir(dx>0?1:-1, 0); } else { setDir(0, dy>0?1:-1); }
-  }, {passive:true});
+  stage.addEventListener('touchstart', e=>{ const t=e.touches[0]; sx=t.clientX; sy=t.clientY; moved=false; }, {passive:true});
+  stage.addEventListener('touchmove', e=>{ moved=true; }, {passive:true});
+  stage.addEventListener('touchend', e=>{ if(!moved) return; ensureAudio(); const t=e.changedTouches[0]; const dx=t.clientX-sx, dy=t.clientY-sy; if(Math.abs(dx)>Math.abs(dy)) setDir(dx>0?1:-1,0); else setDir(0,dy>0?1:-1); }, {passive:true});
 
   function reset(){
-    snake=[[Math.floor(W/2), Math.floor(H/2)]];
-    dir=[1,0]; queue=[]; len=4; speed=10; score=0; paused=false; over=false;
-    apple=rndEmpty(new Set(snake.map(JSON.stringify)));
+    snake=[[Math.floor(W/2), Math.floor(H/2)]]; dir=[1,0]; queue=[]; len=4;
+    speed=10; score=0; paused=false; over=false; win=false;
+    apple=rndEmpty(new Set(snake.map(JSON.stringify))); mail=null; mailTTL=0;
+    msg.style.display='none'; winEl.style.display='none';
   }
 
   function tick(){
-    if(!paused && !over){
-      while(queue.length){
-        const [nx,ny]=queue.shift();
-        if(!(nx===-dir[0] && ny===-dir[1])){ dir=[nx,ny]; break; }
-      }
-      const [hx,hy]=snake[0];
-      let nx=hx+dir[0], ny=hy+dir[1];
-      nx=(nx+W)%W; ny=(ny+H)%H;
-      const head=[nx,ny];
-
-      for(let i=0;i<snake.length;i++){
-        if(snake[i][0]===head[0] && snake[i][1]===head[1]){ over=true; vibrate(120); beep(120,0.2,'sawtooth',0.2); break; }
-      }
-      if(!over){
-        snake.unshift(head);
-        if(snake.length>len) snake.pop();
-        if(head[0]===apple[0] && head[1]===apple[1]){
-          len++; score+=10; speed=Math.min(22, speed+0.5); vibrate(30);
-          // little arpeggio on eat
-          beep(523.25,0.06,'triangle',0.15); setTimeout(()=>beep(659.25,0.06,'triangle',0.15),70); setTimeout(()=>beep(783.99,0.07,'triangle',0.15),140);
-          apple=rndEmpty(new Set(snake.map(JSON.stringify)));
+    if(!paused && !over && !win){
+      while(queue.length){ const [nx,ny]=queue.shift(); if(!(nx===-dir[0] && ny===-dir[1])){ dir=[nx,ny]; break; } }
+      const [hx,hy]=snake[0]; const nx=hx+dir[0], ny=hy+dir[1];
+      if(nx<0||ny<0||nx>=W||ny>=H){ over=true; V(120); ensureAudio(); beep(120,0.25,'sawtooth',0.3); }
+      else{
+        const head=[nx,ny];
+        for(let i=0;i<snake.length;i++){ if(snake[i][0]===head[0]&&snake[i][1]===head[1]){ over=true; V(120); ensureAudio(); beep(120,0.25,'sawtooth',0.3); break; } }
+        if(!over){
+          snake.unshift(head);
+          if(snake.length>len) snake.pop();
+          if(mail && head[0]===mail[0] && head[1]===mail[1]){ win=true; V(60); ensureAudio(); beep(880,0.15,'triangle',0.25); setTimeout(()=>beep(1175,0.15,'triangle',0.25),120); }
+          else if(head[0]===apple[0] && head[1]===apple[1]){
+            len++; score+=10; speed=Math.min(22, speed+0.5); V(30); ensureAudio();
+            beep(523.25,0.06,'triangle',0.18); setTimeout(()=>beep(659.25,0.06,'triangle',0.18),70); setTimeout(()=>beep(783.99,0.07,'triangle',0.18),140);
+            const occ = new Set(snake.map(JSON.stringify));
+            apple = rndEmpty(occ);
+            if(!mail && Math.random()<0.05){ mail = rndEmpty(occ); mailTTL = 400; }
+          }
         }
       }
     }
+    if(mail){ if(--mailTTL<=0){ mail=null; } }
     draw();
     setTimeout(tick, 1000/Math.max(5, speed));
   }
 
+  function rr(x,y,w,h,r){ r=Math.min(r,w/2,h/2); ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+  function cell(x,y,color,rad=8){ const px=x*TILE, py=y*TILE; ctx.fillStyle=color; rr(px+1,py+1,TILE-2,TILE-2,rad); ctx.fill(); }
+  function head(x,y){
+    const px=x*TILE, py=y*TILE;
+    ctx.fillStyle=COL.head; rr(px+1,py+1,TILE-2,TILE-2,10); ctx.fill();
+    ctx.fillStyle=COL.eye; ctx.beginPath(); ctx.arc(px+TILE*0.35, py+TILE*0.40, 2.2, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(px+TILE*0.65, py+TILE*0.40, 2.2, 0, Math.PI*2); ctx.fill();
+  }
+  function drawApple(x,y){ cell(x,y,COL.apple,8); }
+  function drawMail(x,y){
+    const px=x*TILE, py=y*TILE;
+    ctx.fillStyle = COL.mail; rr(px+3,py+5,TILE-6,TILE-10,6); ctx.fill();
+    ctx.fillStyle = '#ffffffcc'; ctx.beginPath(); ctx.moveTo(px+4, py+6); ctx.lineTo(px+TILE-4, py+6); ctx.lineTo(px+TILE/2, py+TILE/2); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#ffecf4'; ctx.fillRect(px+4, py+TILE/2-1, TILE-8, 2);
+  }
+
   function draw(){
     ctx.clearRect(0,0,cv.width,cv.height);
-    drawRect(apple[0], apple[1], APPLE, 6);
-    for(let i=0;i<snake.length;i++){
-      drawRect(snake[i][0], snake[i][1], i===0?HEAD:SNAKE, 6);
-    }
-    scoreEl.textContent = 'Score: '+score;
-    speedEl.textContent = 'Speed: '+speed.toFixed(1);
-    msg.textContent = paused ? 'Paused' : (over ? 'Game Over — tap ↻' : '');
+    ctx.strokeStyle='#ffffff40'; ctx.lineWidth=0.6;
+    for(let x=0;x<=W;x++){ ctx.beginPath(); ctx.moveTo(x*TILE+0.5,0); ctx.lineTo(x*TILE+0.5,H*TILE); ctx.stroke(); }
+    for(let y=0;y<=H;y++){ ctx.beginPath(); ctx.moveTo(0,y*TILE+0.5); ctx.lineTo(W*TILE,y*TILE+0.5); ctx.stroke(); }
+
+    drawApple(apple[0], apple[1]); if(mail) drawMail(mail[0], mail[1]);
+    for(let i=0;i<snake.length;i++){ const [x,y]=snake[i]; if(i===0) head(x,y); else cell(x,y,COL.body,10); }
+
+    scoreEl.textContent = '分数: '+score; speedEl.textContent = '速度: '+speed.toFixed(1);
+    if(over){ msg.textContent='Game Over ～ 撞墙/咬到尾巴了'; msg.style.display='block'; } else if(win){ winEl.style.display='block'; } else { msg.style.display='none'; winEl.style.display='none'; }
   }
+
   tick();
-})();
-</script>
+})();</script>
 </body>
 </html>

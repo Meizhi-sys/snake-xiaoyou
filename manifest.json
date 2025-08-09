@@ -1,10 +1,10 @@
 {
-  "name": "Snake — Xiaoyou Edition",
-  "short_name": "Snake",
+  "name": "粉粉贪吃蛇·小悠特别版",
+  "short_name": "粉粉贪吃蛇",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#0f1219",
-  "theme_color": "#0f1219",
+  "background_color": "#ffd6e6",
+  "theme_color": "#ffd6e6",
   "icons": [
     {
       "src": "icon-512.png",
