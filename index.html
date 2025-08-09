@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
-<title>粉粉贪吃蛇·小悠特别版 (v6.17 稳定修复)</title>
+<title>粉粉贪吃蛇·小悠特别版 (v6.20·精简面板+皮肤解锁)</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#ffd6e6">
 <style>
@@ -18,7 +18,7 @@
           display:flex; align-items:center; justify-content:center;}
   canvas{ max-width:100%; display:block; background:#fff5faCC; backdrop-filter: blur(2px); border-radius:16px;
           box-shadow:0 8px 28px rgba(255,105,180,.25); touch-action:none;}
-  #hud{ position:absolute; top:6px; left:8px; display:flex; gap:10px; font-size:14px; color:#614d55; z-index:5; background:#ffffff80; padding:2px 6px; border-radius:8px; }
+  #hud{ position:absolute; top:6px; left:8px; display:flex; gap:10px; font-size:14px; color:#614d55; z-index:5; background:#ffffffb8; padding:2px 6px; border-radius:8px; }
   #msg{ position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:#ffffffcc; color:#c0396e; padding:10px 14px; border-radius:12px; display:none; box-shadow:0 6px 18px rgba(0,0,0,.08); }
   #banner{ position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:#ffecf6; color:#c0396e; padding:12px 18px; border-radius:14px; display:none; box-shadow:0 10px 30px rgba(255,105,180,.28); font-weight:600; }
   #confetti{ position:absolute; inset:0; pointer-events:none; display:none; }
@@ -32,6 +32,7 @@
   .btn{ width:86px; height:86px; border-radius:20px; border:1px solid #ffc1d6; background:#ffe3ee; color:#b14a76; font-size:22px; box-shadow:0 4px 12px rgba(255,105,180,.18); }
   .btn:active{ transform:scale(.97); }
   @media (max-width:380px){ .btn{ width:68px; height:68px; } }
+
   #actionsWrap{ position:absolute; right: calc(env(safe-area-inset-right) + var(--actionsPadRight)*1px); bottom: 8px; display:flex; align-items:flex-end; justify-content:flex-end; gap:10px; pointer-events:auto; }
   #pause,#restart{ width:64px; height:64px; border-radius:18px; border:none; background:linear-gradient(180deg,#ffcfe1,#ffb7d1); color:#fff; box-shadow:0 6px 16px rgba(255,105,180,.28); display:flex; align-items:center; justify-content:center; }
   #pause svg, #restart svg{ width:28px; height:28px; opacity:.95; }
@@ -47,31 +48,8 @@
           box-shadow:0 14px 38px rgba(0,0,0,.12); min-width:320px; max-width:92vw;
           max-height: calc(var(--vh)*75); overflow:auto;  /* 可滚到底 */
           transform: scale(.86); opacity:0; transition: transform .18s ease, opacity .18s ease;
-          touch-action: pan-y; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
-          padding-bottom: calc(env(safe-area-inset-bottom) + 80px); } /* 预留空间让底部按钮可点 */
-  #panel{
-  position:absolute; top:40px; right:6px;
-  background:#fff7fb; border:1px solid #ffd1e2; border-radius:12px; padding:10px;
-  box-shadow:0 14px 38px rgba(0,0,0,.12);
-  min-width:320px; max-width:92vw;
-
-  /* 关键：面板自己滚，不受 body 的 touch-action:none 限制 */
-  max-height: min(calc(var(--vh) * 78), calc(100vh - 88px));
-  overflow: auto;
-  touch-action: auto;                  /* <- 从 pan-y 改成 auto，更稳 */
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior: contain;
-
-  /* 为底部 sticky 区多留空间，保证“应用/关闭”能被完全滚到并可点 */
-  padding-bottom: calc(env(safe-area-inset-bottom) + 160px);
-
-  /* 动画保留 */
-  transform: scale(.86); opacity:0; transition: transform .18s ease, opacity .18s ease;
-}
-#panel .sticky{
-  position: sticky; bottom: 0; z-index: 1;
-  background:#fff7fb; padding-top:6px;
-}
+          touch-action: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
+          padding-bottom: calc(env(safe-area-inset-bottom) + 120px); }
   #panelMask.show #panel{ transform: scale(1); opacity:1; }
   #panel label{ font-size:12px; display:block; margin:6px 0 2px; }
   #panel input[type=range], #panel select{ width:260px; max-width:70vw; }
@@ -99,7 +77,7 @@
       <div id="banner">➡️ 下一关！</div>
       <div id="win">💖 恭喜通关！</div>
 
-      <!-- 开始遮罩（点击播放音乐并开始） -->
+      <!-- 开始遮罩 -->
       <div id="startMask">
         <div id="startCard">
           <h1>粉粉贪吃蛇 · 小悠特别版</h1>
@@ -113,15 +91,11 @@
         <button class="chip" id="bgmToggle">音乐: 开</button>
       </div>
 
-      <!-- 设置面板 -->
+      <!-- 设置面板（精简 + 皮肤手选） -->
       <div id="panelMask">
         <div id="panel">
           <label>按键区高度（% 屏幕，0–100）：<span id="ctlVal">45</span>%</label>
           <input id="ctlRange" type="range" min="0" max="100" step="1" value="45"/>
-          <label>按键区上移偏移（px，0–120）：<span id="liftVal">44</span></label>
-          <input id="liftRange" type="range" min="0" max="120" step="2" value="44"/>
-          <label>右下角按钮向内偏移（px，0–220）：<span id="padVal">30</span></label>
-          <input id="padRange" type="range" min="0" max="220" step="2" value="30"/>
 
           <div class="row">
             <label style="min-width:110px;">棋盘颗粒：</label>
@@ -139,6 +113,7 @@
               <option value="die">死亡</option>
             </select>
           </div>
+
           <div class="row">
             <label style="min-width:110px;">食物样式：</label>
             <select id="foodStyle">
@@ -146,6 +121,7 @@
               <option value="candy">糖果</option>
             </select>
           </div>
+
           <div class="row">
             <label style="min-width:110px;">吃到是否加速：</label>
             <select id="speedUp">
@@ -153,6 +129,7 @@
               <option value="on">开（每个+0.25）</option>
             </select>
           </div>
+
           <label>蛇速起始值：</label>
           <input id="spdRange" type="range" min="5" max="10" step="0.5" value="7"/>
 
@@ -170,29 +147,11 @@
 
           <hr style="border:none;border-top:1px solid #ffd4e4;margin:8px 8px;">
 
-          <div class="row">
-            <label style="min-width:110px;">彩纸粒子数量：</label>
-            <input id="confettiN" type="range" min="20" max="200" step="10" value="80"/>
-          </div>
-          <div class="row">
-            <label style="min-width:110px;">彩纸时长（毫秒）：<span id="confettiTVal">1200</span></label>
-            <input id="confettiT" type="range" min="400" max="3000" step="100" value="1200"/>
-          </div>
-
-          <div class="row">
-            <label style="min-width:110px;">通关奖励：</label>
-            <select id="rewardMode">
-              <option value="points" selected>加分</option>
-              <option value="skin">解锁皮肤</option>
-            </select>
-          </div>
-          <div id="rewardPointsRow">
-            <label>奖励分数（+10 ～ +200）：<span id="rewardVal">50</span></label>
-            <input id="rewardPoints" type="range" min="10" max="200" step="10" value="50"/>
-          </div>
-
           <label>当前皮肤（可点击切换，🔒为未解锁）：</label>
           <div id="skins"></div>
+
+          <!-- 占位，确保能滚到最底并能点到按钮 -->
+          <div class="spacer" style="height:80px;" aria-hidden="true"></div>
 
           <div class="sticky" style="display:flex; gap:6px; flex-wrap:wrap;">
             <button class="chip" id="apply">应用并保存</button>
@@ -226,7 +185,7 @@
   </div>
 </div>
 
-<!-- 背景音乐：优先播放 friendship.mp3；失败则启用 WebAudio 8-bit 备胎 -->
+<!-- 背景音乐：优先 friendship.mp3；失败用 WebAudio 8-bit 备胎 -->
 <audio id="bgm" src="friendship.mp3" preload="auto" loop playsinline></audio>
 
 <script>
@@ -247,8 +206,6 @@
   const msg=document.getElementById('msg'), banner=document.getElementById('banner'), winEl=document.getElementById('win');
   const panelMask=document.getElementById('panelMask'), panel=document.getElementById('panel'), skinsWrap=document.getElementById('skins');
   const ctlRange=document.getElementById('ctlRange'), ctlVal=document.getElementById('ctlVal');
-  const liftRange=document.getElementById('liftRange'), liftVal=document.getElementById('liftVal');
-  const padRange=document.getElementById('padRange'), padVal=document.getElementById('padVal');
   const spdRange=document.getElementById('spdRange');
   const wallSel=document.getElementById('wallMode');
   const foodSel=document.getElementById('foodStyle');
@@ -256,23 +213,21 @@
   const levelModeSel=document.getElementById('levelMode');
   const tsRange=document.getElementById('tsRange'), tsVal=document.getElementById('tsVal');
   const boardPresetSel=document.getElementById('boardPreset');
-  const confettiNSlider=document.getElementById('confettiN');
-  const confettiTSlider=document.getElementById('confettiT'), confettiTVal=document.getElementById('confettiTVal');
-  const rewardModeSel=document.getElementById('rewardMode');
-  const rewardPointsRow=document.getElementById('rewardPointsRow');
-  const rewardPointsSlider=document.getElementById('rewardPoints'), rewardVal=document.getElementById('rewardVal');
   const startMask=document.getElementById('startMask'), startBtn=document.getElementById('startBtn');
   const sfxBtn=document.getElementById('sfx'), bgmBtn=document.getElementById('bgmToggle');
   const bgmEl=document.getElementById('bgm');
 
-  /* ---------- 设置载入 ---------- */
+  /* ---------- 设置载入（精简） ---------- */
   const PRESETS={'30x22':[30,22],'26x18':[26,18],'22x16':[22,16]};
   let presetKey='26x18'; let W=26,H=18; let TILEPX=22;
   const saved=JSON.parse(localStorage.getItem('xy_snake_settings')||'{}');
   function setVar(n,v){ document.documentElement.style.setProperty(n,v); }
+
   if(saved.controlsH!=null){ setVar('--controlsH',saved.controlsH); ctlRange.value=saved.controlsH; ctlVal.textContent=saved.controlsH; }
-  if(saved.controlsLift!=null){ setVar('--controlsLift',saved.controlsLift); liftRange.value=saved.controlsLift; liftVal.textContent=saved.controlsLift; }
-  if(saved.actionsPadRight!=null){ setVar('--actionsPadRight',saved.actionsPadRight); padRange.value=saved.actionsPadRight; padVal.textContent=saved.actionsPadRight; }
+  // 固定：不再提供 UI 的两项
+  setVar('--controlsLift', 44);
+  setVar('--actionsPadRight', 30);
+
   let startSpeed = saved.startSpeed!=null ? +saved.startSpeed : 7;
   let sfxOn = saved.sfxOn!==false;
   let bgmOn = saved.bgmOn!==false;
@@ -284,14 +239,11 @@
   if(saved.boardPreset && PRESETS[saved.boardPreset]){ presetKey=saved.boardPreset; [W,H]=PRESETS[presetKey]; }
   boardPresetSel.value=presetKey;
 
-  let confettiCount = saved.confettiCount||80;
-  let confettiDur   = saved.confettiDur||1200;
-  confettiNSlider.value=confettiCount; confettiTSlider.value=confettiDur; confettiTVal.textContent=confettiDur;
-
-  let rewardMode  = saved.rewardMode||'points';
-  let rewardPoints= saved.rewardPoints||50;
-  rewardModeSel.value=rewardMode; rewardPointsSlider.value=rewardPoints; rewardVal.textContent=rewardPoints;
-  rewardPointsRow.style.display = (rewardMode==='points'?'block':'none');
+  // 固定彩纸与奖励（UI 已删除）
+  const confettiCount = 80;
+  const confettiDur   = 1200;
+  const rewardMode    = 'points';
+  const rewardPoints  = 50;
 
   /* ---------- 皮肤 ---------- */
   const ALL_SKINS=[
@@ -324,7 +276,6 @@
     if(!bgmOn) return;
     try{ await bgmEl.play(); return; }
     catch(e){
-      // 备胎：8-bit 合成
       if(!synthCtx){
         synthCtx = new (window.AudioContext||window.webkitAudioContext)();
         const bpm=128, step=60/bpm/2;
@@ -354,7 +305,6 @@
     }
   }
   function stopSynth(){ synthOn=false; if(synthCtx){ try{synthCtx.close();}catch{} synthCtx=null; } }
-
   function uiToast(t){ msg.textContent=t; msg.style.display='block'; setTimeout(()=>{ msg.style.display='none'; },1200); }
 
   // 顶部按钮状态
@@ -363,48 +313,49 @@
   bgmBtn.onclick=()=>{ bgmOn=!bgmOn; bgmBtn.textContent='音乐: '+(bgmOn?'开':'关'); saveSettings(); if(bgmOn) tryPlayBGM(); else { bgmEl.pause(); stopSynth(); } };
   sfxBtn.onclick=()=>{ sfxOn=!sfxOn; sfxBtn.textContent='音效: '+(sfxOn?'开':'关'); saveSettings(); };
 
-  // 设置面板
-  function togglePanel(show){ panelMask.classList.toggle('show', !!show); }
+  // 面板开关（打开时放开 body 手势，防止外层吃掉滚动）
+  function togglePanel(show){
+    if(show){
+      panelMask.classList.add('show');
+      document.body.style.touchAction='auto';
+      document.body.style.overflow='hidden';
+    }else{
+      panelMask.classList.remove('show');
+      document.body.style.touchAction='none';
+      document.body.style.overflow='';
+    }
+  }
   document.getElementById('menu').onclick=()=>togglePanel(true);
   panelMask.addEventListener('click', e=>{ if(e.target===panelMask) togglePanel(false); });
   document.getElementById('close').onclick=()=>togglePanel(false);
+  panel.addEventListener('touchmove', ()=>{}, {passive:true});
+  panelMask.addEventListener('touchmove', e=>{ if(e.target===panelMask){ e.preventDefault(); } }, {passive:false});
+
   document.getElementById('apply').onclick=()=>{ applySettings(true); togglePanel(false); };
   document.getElementById('reset').onclick=()=>{
     localStorage.removeItem('xy_snake_settings');
-    ctlRange.value=45; ctlVal.textContent='45'; liftRange.value=44; liftVal.textContent='44'; padRange.value=30; padVal.textContent='30';
-    spdRange.value=7; wallSel.value='wrap'; foodSel.value='pixel'; speedUpSel.value='off'; levelModeSel.value='on'; tsRange.value=100; tsVal.textContent='100';
-    boardPresetSel.value='26x18'; presetKey='26x18'; [W,H]=PRESETS[presetKey];
+    ctlRange.value=45; ctlVal.textContent='45';
     sfxOn=true; bgmOn=true; sfxBtn.textContent='音效: 开'; bgmBtn.textContent='音乐: 开';
-    confettiNSlider.value=80; confettiTSlider.value=1200; confettiTVal.textContent=1200;
-    rewardModeSel.value='points'; rewardPointsSlider.value=50; rewardVal.textContent=50; rewardPointsRow.style.display='block';
-    unlocked=['classic']; skinKey='classic'; renderSkins(); applySettings(true);
-    tryPlayBGM();
+    wallMode='wrap'; foodStyle='pixel'; speedUp='off'; levelMode='on'; startSpeed=7; targetScore=100;
+    boardPresetSel.value='26x18'; presetKey='26x18'; [W,H]=PRESETS[presetKey];
+    unlocked=['classic']; skinKey='classic'; renderSkins(); applySettings(true); tryPlayBGM();
   };
 
   // 即时 UI 显示
   ctlRange.oninput=()=>{ ctlVal.textContent=ctlRange.value; setVar('--controlsH', ctlRange.value); };
-  liftRange.oninput=()=>{ liftVal.textContent=liftRange.value; setVar('--controlsLift', liftRange.value); };
-  padRange.oninput=()=>{ padVal.textContent=padRange.value; setVar('--actionsPadRight', padRange.value); };
   tsRange.oninput =()=>{ tsVal.textContent=tsRange.value; };
-  confettiTSlider.oninput=()=>{ confettiTVal.textContent=confettiTSlider.value; };
-  rewardPointsSlider.oninput=()=>{ rewardVal.textContent=rewardPointsSlider.value; };
-  rewardModeSel.onchange=()=>{ rewardPointsRow.style.display=(rewardModeSel.value==='points'?'block':'none'); };
 
   function saveSettings(){
     localStorage.setItem('xy_snake_settings', JSON.stringify({
-      controlsH:ctlRange.value,controlsLift:liftRange.value,actionsPadRight:padRange.value,
-      startSpeed:startSpeed,sfxOn:sfxOn,bgmOn:bgmOn,wallMode:wallMode,foodStyle:foodStyle,speedUp:speedUp,
-      levelMode:levelMode,targetScore:targetScore,boardPreset:presetKey,
-      confettiCount:confettiCount,confettiDur:confettiDur,
-      rewardMode:rewardMode,rewardPoints:rewardPoints,
-      unlocked:unlocked,skinKey:skinKey
+      controlsH:ctlRange.value,
+      startSpeed, sfxOn, bgmOn, wallMode, foodStyle, speedUp,
+      levelMode, targetScore, boardPreset:presetKey,
+      unlocked, skinKey
     }));
   }
   function applySettings(persist){
     startSpeed=parseFloat(spdRange.value);
     wallMode=wallSel.value; foodStyle=foodSel.value; speedUp=speedUpSel.value; levelMode=levelModeSel.value; targetScore=parseInt(tsRange.value,10);
-    confettiCount=parseInt(confettiNSlider.value,10); confettiDur=parseInt(confettiTSlider.value,10);
-    rewardMode=rewardModeSel.value; rewardPoints=parseInt(rewardPointsSlider.value,10);
     const bp=boardPresetSel.value; let needReset=false;
     if(bp!==presetKey){ presetKey=bp; [W,H]=PRESETS[presetKey]; needReset=true; }
     if(persist) saveSettings();
@@ -450,7 +401,7 @@
   /* ---------- 游戏状态与逻辑 ---------- */
   let snake=[], dir=[1,0], queue=[];
   let len=4, speed=startSpeed, score=0, level=1, paused=true, over=false, win=false, overReason='';
-  let apple=null, lastAppleAt=0; let mail=null, mailTTL=0;
+  let apple=null, lastAppleAt=0; let mail=null, mailTTL=0;  // 💌 特殊道具（通关）
 
   function vibr(ms){ try{ if('vibrate' in navigator) navigator.vibrate(ms);}catch(e){} }
 
@@ -483,6 +434,22 @@
   function ensureApple(){ if(!apple) placeAppleNew(false); }
 
   function showBanner(text){ banner.textContent=text||'➡️ 下一关！'; banner.style.display='block'; setTimeout(()=>{banner.style.display='none';},900); }
+
+  // ★ 新：每过2关自动解锁并自动装备新皮肤
+  function unlockNextSkin(autoEquip = true){
+    const allKeys = ALL_SKINS.map(s=>s.key);
+    const locked  = allKeys.filter(k=>!unlocked.includes(k));
+    if(locked.length === 0){ showBanner('🌟 皮肤已全部解锁'); return false; }
+    const nextKey = locked[0];
+    unlocked.push(nextKey);
+    const nextSkin = ALL_SKINS.find(s=>s.key===nextKey);
+    if(autoEquip){ skinKey = nextKey; applyPalette(); }
+    renderSkins(); saveSettings();
+    showBanner('🌟 解锁皮肤：' + nextSkin.name + '（已自动装备）');
+    popConfetti();
+    return true;
+  }
+
   function maybeLevelUp(){
     if(levelMode!=='on') return;
     const need=targetScore*level;
@@ -491,14 +458,15 @@
       hudLevel.textContent='关卡: '+level;
       showBanner('➡️ 第 '+level+' 关！');
       if(speedUp==='off'){ speed=Math.min(14, startSpeed+(level-1)*0.5); hudSpeed.textContent='速度: '+speed.toFixed(1); }
+      if(level % 2 === 0) unlockNextSkin(true); // 每到偶数关解锁皮肤
     }
   }
 
-  // 彩纸
+  // 彩纸（固定配置）
   let confettiStart=0, confettiP=[];
   function popConfetti(){
     confettiStart=performance.now(); confettiP=[];
-    const N=confettiCount;
+    const N=confettiCount; // 80
     const w=cv.clientWidth, h=cv.clientHeight;
     for(let i=0;i<N;i++){
       confettiP.push({x:Math.random()*w, y:h/2, vx:(Math.random()-0.5)*2, vy:(Math.random()-1.5)*3, a:Math.random()*Math.PI, s:2+Math.random()*3});
@@ -513,24 +481,22 @@
       p.x+=p.vx; p.y+=p.vy; p.vy+=0.05; p.a+=0.2;
       cctx.save(); cctx.translate(p.x,p.y); cctx.rotate(p.a); cctx.fillStyle='#ff7fb3'; cctx.fillRect(-p.s,-p.s,p.s*2,p.s*2); cctx.restore();
     }
-    if(now-confettiStart<confettiDur) requestAnimationFrame(stepConfetti); else conf.style.display='none';
+    if(now-confettiStart<confettiDur) requestAnimationFrame(stepConfetti); else conf.style.display='none'; // 1200ms
+  }
+
+  // 💌 特殊道具（吃到直接通关）
+  function drawCandy(x,y){ const t=TILEPX, px=x*t, py=y*t; const cx=px+t/2, cy=py+t/2, r=t*0.36;
+    const grd=ctx.createRadialGradient(cx-2,cy-2,2,cx,cy,r+2); grd.addColorStop(0,'#ff7fb3'); grd.addColorStop(1,'#ff5fa3');
+    ctx.fillStyle='#ffd1e6';
+    ctx.beginPath(); ctx.moveTo(px+2,cy); ctx.lineTo(px+6,cy-6); ctx.lineTo(px+6,cy+6); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(px+t-2,cy); ctx.lineTo(px+t-6,cy-6); ctx.lineTo(px+t-6,cy+6); ctx.closePath(); ctx.fill();
+    ctx.fillStyle=grd; ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fill();
   }
 
   function rewardWin(){
-    if(rewardMode==='points'){
-      score+=rewardPoints; hudScore.textContent='分数: '+score+' (+'+rewardPoints+')';
-      showBanner('🎉 奖励 +'+rewardPoints);
-    }else{
-      const allKeys=ALL_SKINS.map(s=>s.key);
-      const locked=allKeys.filter(k=>!unlocked.includes(k));
-      if(locked.length>0){
-        const next=locked[0]; unlocked.push(next); skinKey=next; applyPalette(); renderSkins(); saveSettings();
-        const n=ALL_SKINS.find(s=>s.key===next).name;
-        showBanner('🌟 解锁皮肤：'+n);
-      }else{
-        showBanner('🌟 全部皮肤已解锁！');
-      }
-    }
+    // 固定奖励分 +50
+    score+=rewardPoints; hudScore.textContent='分数: '+score+' (+'+rewardPoints+')';
+    showBanner('🎉 奖励 +'+rewardPoints);
     winEl.style.display='block';
     popConfetti();
   }
@@ -590,16 +556,11 @@
     setTimeout(tick, 1000/Math.max(5, speed));
   }
 
+  /* ---------- 绘制 ---------- */
   function rr(x,y,w,h,r){ r=Math.min(r,w/2,h/2); ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
   function headCell(x,y){ const t=TILEPX, px=x*t, py=y*t; ctx.fillStyle=COL.head; rr(px+1,py+1,t-2,t-2,Math.min(10,t/2)); ctx.fill(); ctx.fillStyle=COL.eye; ctx.beginPath(); ctx.arc(px+t*0.35, py+t*0.40, Math.max(2,t*0.1), 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(px+t*0.65, py+t*0.40, Math.max(2,t*0.1), 0, Math.PI*2); ctx.fill(); }
   function bodyCell(x,y){ const t=TILEPX, px=x*t, py=y*t; ctx.fillStyle=COL.body; rr(px+1,py+1,t-2,t-2,Math.min(10,t/2)); ctx.fill(); }
   function drawPixelFood(x,y){ const t=TILEPX, px=x*t, py=y*t; const s=Math.max(8, t-10); const off=(t-s)/2; ctx.fillStyle='#ff3366'; ctx.fillRect(px+off,py+off,s,s); ctx.strokeStyle='#ffffff90'; ctx.strokeRect(px+off+0.5,py+off+0.5,s-1,s-1); }
-  function drawCandy(x,y){ const t=TILEPX, px=x*t, py=y*t; const cx=px+t/2, cy=py+t/2, r=t*0.36;
-    ctx.fillStyle='#ffd1e6';
-    ctx.beginPath(); ctx.moveTo(px+2,cy); ctx.lineTo(px+6,cy-6); ctx.lineTo(px+6,cy+6); ctx.closePath(); ctx.fill();
-    ctx.beginPath(); ctx.moveTo(px+t-2,cy); ctx.lineTo(px+t-6,cy-6); ctx.lineTo(px+t-6,cy+6); ctx.closePath(); ctx.fill();
-    const grd=ctx.createRadialGradient(cx-2,cy-2,2,cx,cy,r+2); grd.addColorStop(0,'#ff7fb3'); grd.addColorStop(1,'#ff5fa3'); ctx.fillStyle=grd; ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fill();
-  }
 
   function draw(){
     const t=TILEPX;
@@ -609,8 +570,8 @@
     for(let y=0;y<=H;y++){ ctx.beginPath(); ctx.moveTo(0,y*t+0.5); ctx.lineTo(W*t,y*t+0.5); ctx.stroke(); }
 
     if(!apple) ensureApple();
-    if(apple){ (foodStyle==='pixel'?drawPixelFood:drawCandy)(apple[0],apple[1]); }
-    if(mail) drawCandy(mail[0],mail[1]);
+    if(apple){ (foodStyle==='pixel'?drawPixelFood:drawCandy)(apple[0],apple[1]); } // pixel 或 candy
+    if(mail) drawCandy(mail[0],mail[1]); // 💌
 
     for(let i=0;i<snake.length;i++){ const [x,y]=snake[i]; if(i===0) headCell(x,y); else bodyCell(x,y); }
 
@@ -624,7 +585,6 @@
     try{ await tryPlayBGM(); bgmTried=true; }catch(e){ uiToast('若无音乐，请检查静音拨片或音量～'); }
     startGame();
   });
-  // 兜底：首次触摸/点击也尝试一次
   window.addEventListener('touchstart', ()=>{ if(!bgmTried){ tryPlayBGM().then(()=>bgmTried=true); } }, { once:true });
   window.addEventListener('mousedown',  ()=>{ if(!bgmTried){ tryPlayBGM().then(()=>bgmTried=true); } }, { once:true });
 
