@@ -3,15 +3,16 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
-<title>粉粉贪吃蛇·小悠特别版 (PWA v6.4)</title>
+<title>粉粉贪吃蛇·小悠特别版 (PWA v6.5)</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#ffd6e6">
 <link rel="apple-touch-icon" href="icon-512.png">
 <style>
   :root{
-    --vh: 1vh;                 /* 将由 visualViewport 替换 */
-    --controlsH: 22;           /* 控制区高度百分比（设置可改；默认 22% 更靠上） */
-    --actionsPadRight: 56;     /* 右下角按钮向内偏移 px（设置可改；默认更靠左） */
+    --vh: 1vh;
+    --controlsH: 22;           /* % of screen height, now can go to 100 via Settings */
+    --controlsLift: 0;         /* px upward nudge for the whole controls area */
+    --actionsPadRight: 80;     /* px inward padding for right-bottom buttons, range up to 200 */
     --tile: 22;
     --gap: 12px;
   }
@@ -20,37 +21,34 @@
   body::after{ content:''; position:fixed; inset:0; z-index:-1; opacity:.18; background-image:url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScxMjAnIGhlaWdodD0nMTIwJyB2aWV3Qm94PScwIDAgMTIwIDEyMCc+CiAgPGcgZmlsbD0nbm9uZScgc3Ryb2tlPSdyZ2JhKDI1NSwxMjAsMTYwLDAuMjIpJyBzdHJva2Utd2lkdGg9JzMnPgogICAgPHBhdGggZD0nTTIwLDYwIFE0MCwyMCA2MCw0MCBRODAsMjAgMTAwLDYwIFE4MCwxMDAgNjAsODAgUTQwLDEwMCAyMCw2MCBaJy8+CiAgICA8Y2lyY2xlIGN4PSc2MCcgY3k9JzYwJyByPSc2JyBmaWxsPSdyZ2JhKDI1NSwxMjAsMTYwLDAuMjIpJy8+CiAgPC9nPgo8L3N2Zz4="); background-size:160px 160px; background-repeat:repeat; pointer-events:none; }
 
   #wrap{ display:flex; flex-direction:column; min-height:calc(var(--vh)*100); padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
-  /* 压缩游戏区与控制区之间的空白：减小 padding */
-  #gameArea{ height: calc(var(--vh) * (100 - var(--controlsH)) - env(safe-area-inset-top)); display:flex; align-items:center; justify-content:center; padding:6px 8px 4px; }
+  #gameArea{ height: calc(var(--vh) * (100 - var(--controlsH)) - env(safe-area-inset-top)); display:flex; align-items:center; justify-content:center; padding:4px 8px 2px; min-height:80px; }
   #stage{ position:relative; width:min(96vw, 900px); height:100%; display:flex; align-items:center; justify-content:center; }
   canvas{ background:#fff5faCC; backdrop-filter: blur(2px); border-radius:16px; box-shadow:0 8px 28px rgba(255,105,180,.25); }
-  #hud{ position:absolute; top:8px; left:10px; display:flex; gap:10px; font-size:14px; color:#614d55; }
+  #hud{ position:absolute; top:6px; left:8px; display:flex; gap:10px; font-size:14px; color:#614d55; }
   #msg{ position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:#ffffffcc; color:#c0396e; padding:10px 14px; border-radius:12px; display:none; box-shadow:0 6px 18px rgba(0,0,0,.08); }
   #win{ position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:#fff0f7; color:#c0396e; padding:12px 16px; border-radius:14px; display:none; box-shadow:0 8px 28px rgba(255,105,180,.25); }
 
-  /* 控制区更靠上：减少底部 padding */
   #controls{ height: calc(var(--vh) * var(--controlsH)); position:relative; }
-  #controlsInner{ position:absolute; left:0; right:0; top:0; bottom:0; display:grid; grid-template-columns: 1fr 1fr; padding-bottom: calc(env(safe-area-inset-bottom) + 4px); }
+  #controlsInner{ position:absolute; left:0; right:0; top:0; bottom:0; display:grid; grid-template-columns: 1fr 1fr;
+                  padding-bottom: calc(env(safe-area-inset-bottom) + 2px);
+                  transform: translateY(calc(var(--controlsLift) * -1px)); }
   #dpadWrap{ display:flex; align-items:center; justify-content:center; }
   #dpad{ display:grid; gap: var(--gap); grid-template-areas: ". up ." "left . right" ". down ."; }
   .btn{ width:86px; height:86px; border-radius:20px; border:1px solid #ffc1d6; background:#ffe3ee; color:#b14a76; font-size:22px; box-shadow:0 4px 12px rgba(255,105,180,.18); }
   .btn:active{ transform:scale(.97); }
   @media (max-width:380px){ .btn{ width:68px; height:68px; } }
-  #actionsWrap{ display:flex; align-items:flex-end; justify-content:flex-end; padding:10px; padding-right: calc(env(safe-area-inset-right) + var(--actionsPadRight)*1px); gap:10px; }
-  /* 美化暂停/重开按钮 */
+  #actionsWrap{ display:flex; align-items:flex-end; justify-content:flex-end; padding:8px; padding-right: calc(env(safe-area-inset-right) + var(--actionsPadRight)*1px); gap:10px; }
   #pause,#restart{ width:64px; height:64px; border-radius:18px; border:none; background:linear-gradient(180deg,#ffcfe1,#ffb7d1); color:#fff; box-shadow:0 6px 16px rgba(255,105,180,.28); display:flex; align-items:center; justify-content:center; }
   #pause svg, #restart svg{ width:28px; height:28px; opacity:.95; }
 
-  /* 设置面板 */
-  #settings{ position:absolute; top:8px; right:8px; display:flex; gap:8px; }
+  #settings{ position:absolute; top:6px; right:6px; display:flex; gap:8px; }
   .chip{ padding:6px 10px; border-radius:14px; background:#ffcee0; border:1px solid #ffb7cf; color:#a33e6a; font-size:12px; }
-  #panel{ position:absolute; top:42px; right:8px; background:#fff7fb; border:1px solid #ffd1e2; border-radius:12px; padding:10px; box-shadow:0 8px 24px rgba(0,0,0,.08); display:none; min-width:260px; }
+  #panel{ position:absolute; top:40px; right:6px; background:#fff7fb; border:1px solid #ffd1e2; border-radius:12px; padding:10px; box-shadow:0 8px 24px rgba(0,0,0,.08); display:none; min-width:260px; }
   #panel label{ font-size:12px; display:block; margin:6px 0 2px; }
-  #panel input[type=range]{ width:240px; max-width:56vw; }
-  #panel input[type=url]{ width:240px; max-width:56vw; padding:6px 8px; border-radius:8px; border:1px solid #ffc9dc; }
+  #panel input[type=range]{ width:240px; max-width:60vw; }
+  #panel input[type=url]{ width:240px; max-width:60vw; padding:6px 8px; border-radius:8px; border:1px solid #ffc9dc; }
 
-  /* 小提示气泡 */
-  #toast{ position:fixed; left:50%; bottom: calc(env(safe-area-inset-bottom) + 72px); transform:translateX(-50%); background:#000000a0; color:#fff; padding:8px 12px; border-radius:10px; font-size:12px; display:none; z-index:9999; }
+  #toast{ position:fixed; left:50%; bottom: calc(env(safe-area-inset-bottom) + 64px); transform:translateX(-50%); background:#000000a0; color:#fff; padding:8px 12px; border-radius:10px; font-size:12px; display:none; z-index:9999; }
 </style>
 </head>
 <body>
@@ -68,10 +66,12 @@
         <button class="chip" id="bgm">音乐: 开</button>
       </div>
       <div id="panel">
-        <label>按键区高度（% 屏幕）：<span id="ctlVal">22</span>%</label>
-        <input id="ctlRange" type="range" min="18" max="35" step="1" value="22"/>
-        <label>右下角按钮向内偏移（px）：<span id="padVal">56</span></label>
-        <input id="padRange" type="range" min="0" max="100" step="2" value="56"/>
+        <label>按键区高度（% 屏幕，0–100）：<span id="ctlVal">22</span>%</label>
+        <input id="ctlRange" type="range" min="0" max="100" step="1" value="22"/>
+        <label>按键区上移偏移（px，0–120）：<span id="liftVal">0</span></label>
+        <input id="liftRange" type="range" min="0" max="120" step="2" value="0"/>
+        <label>右下角按钮向内偏移（px，0–200）：<span id="padVal">80</span></label>
+        <input id="padRange" type="range" min="0" max="200" step="2" value="80"/>
         <label>蛇速起始值：</label>
         <input id="spdRange" type="range" min="5" max="10" step="0.5" value="7"/>
         <label style="margin-top:8px;">自定义 BGM（MP3 直链，可选）：</label>
@@ -132,10 +132,13 @@ if ('serviceWorker' in navigator) { window.addEventListener('load', ()=>navigato
   const msg=document.getElementById('msg'), winEl=document.getElementById('win');
   const toast=document.getElementById('toast');
 
-  // Load persisted settings
+  // Persisted settings
   const saved = JSON.parse(localStorage.getItem('xy_snake_settings')||'{}');
-  if(saved.controlsH){ document.documentElement.style.setProperty('--controlsH', saved.controlsH); }
-  if(saved.actionsPadRight){ document.documentElement.style.setProperty('--actionsPadRight', saved.actionsPadRight); }
+  function setVar(name, val){ document.documentElement.style.setProperty(name, val); }
+
+  if(saved.controlsH){ setVar('--controlsH', saved.controlsH); }
+  if(saved.controlsLift){ setVar('--controlsLift', saved.controlsLift); }
+  if(saved.actionsPadRight){ setVar('--actionsPadRight', saved.actionsPadRight); }
   let startSpeed = saved.startSpeed ? parseFloat(saved.startSpeed) : 7;
   let customURL = saved.musicURL || '';
   let sfxOn = saved.sfxOn===false ? false : true;
@@ -202,24 +205,32 @@ if ('serviceWorker' in navigator) { window.addEventListener('load', ()=>navigato
   // --- Game ---
   let snake=[], dir=[1,0], queue=[], len=4;
   let speed=startSpeed, score=0, paused=false, over=false, win=false;
-  let apple=null;
-  let mail=null, mailTTL=0;
+  let apple=null, mail=null, mailTTL=0;
+
+  function rndEmpty(occ){
+    while(true){
+      const c=[Math.floor(Math.random()*W), Math.floor(Math.random()*H)];
+      if(!occ.has(JSON.stringify(c))) return c;
+    }
+  }
+  function ensureApple(){
+    if(!apple){
+      const occ=new Set(snake.map(JSON.stringify));
+      apple = rndEmpty(occ);
+    }
+  }
 
   function initState(){
-    // Center start
     const cx=Math.floor(W/2), cy=Math.floor(H/2);
     snake=[[cx,cy]]; dir=[1,0]; queue=[]; len=4; score=0; paused=false; over=false; win=false;
-    // Ensure apple spawns and not on snake
-    const occ = new Set(snake.map(JSON.stringify));
-    apple=rndEmpty(occ);
-    mail=null; mailTTL=0;
+    apple=null; mail=null; mailTTL=0;
+    ensureApple();
     speedEl.textContent='速度: '+speed.toFixed(1);
   }
 
-  function rndEmpty(occ){ while(true){ const c=[Math.floor(Math.random()*W), Math.floor(Math.random()*H)]; if(!occ.has(JSON.stringify(c))) return c; } }
   function setDir(nx,ny){ if(nx===-dir[0] && ny===-dir[1]) return; queue.push([nx,ny]); if(sfxOn) beep(240,0.05,'square',0.06); }
 
-  const V=(ms)=>{ try{ if('vibrate' in navigator) navigator.vibrate(ms);}catch(e){} };
+  const V=(ms)=>{ try{ if('vibrate' in navigator) navigator.vibrate(ms);}catch(e){} }
   function showToast(){ const t=toast; t.style.display='block'; setTimeout(()=>t.style.display='none', 1800); }
   window.addEventListener('load', ()=>{ if(bgmOn) showToast(); });
   ['touchstart','mousedown'].forEach(ev=>window.addEventListener(ev,()=>{
@@ -241,28 +252,31 @@ if ('serviceWorker' in navigator) { window.addEventListener('load', ()=>navigato
   // Settings panel
   const menu=document.getElementById('menu'), panel=document.getElementById('panel');
   const ctlRange=document.getElementById('ctlRange'), ctlVal=document.getElementById('ctlVal');
+  const liftRange=document.getElementById('liftRange'), liftVal=document.getElementById('liftVal');
   const padRange=document.getElementById('padRange'), padVal=document.getElementById('padVal');
   const musicURL=document.getElementById('musicURL');
   const sfxBtn=document.getElementById('sfx'), bgmBtn=document.getElementById('bgm');
   const spdRange=document.getElementById('spdRange');
 
-  // init inputs with saved
   ctlRange.value = saved.controlsH || 22; ctlVal.textContent = ctlRange.value;
-  padRange.value = saved.actionsPadRight || 56; padVal.textContent = padRange.value;
+  liftRange.value = saved.controlsLift || 0; liftVal.textContent = liftRange.value;
+  padRange.value = saved.actionsPadRight || 80; padVal.textContent = padRange.value;
   spdRange.value = startSpeed;
   if(customURL) musicURL.value = customURL;
   sfxBtn.textContent = '音效: ' + (sfxOn ? '开':'关');
   bgmBtn.textContent = '音乐: ' + (bgmOn ? '开':'关');
 
   function applySettings(persist){
-    document.documentElement.style.setProperty('--controlsH', ctlRange.value);
-    document.documentElement.style.setProperty('--actionsPadRight', padRange.value);
+    setVar('--controlsH', ctlRange.value);
+    setVar('--controlsLift', liftRange.value);
+    setVar('--actionsPadRight', padRange.value);
     speed = parseFloat(spdRange.value);
     speedEl.textContent='速度: '+speed.toFixed(1);
     customURL = musicURL.value.trim();
     if(persist){
       const data = {
         controlsH: ctlRange.value,
+        controlsLift: liftRange.value,
         actionsPadRight: padRange.value,
         startSpeed: speed,
         musicURL: customURL,
@@ -277,13 +291,15 @@ if ('serviceWorker' in navigator) { window.addEventListener('load', ()=>navigato
   bgmBtn.onclick=()=>{ bgmOn=!bgmOn; bgmBtn.textContent='音乐: '+(bgmOn?'开':'关'); const d=JSON.parse(localStorage.getItem('xy_snake_settings')||'{}'); d.bgmOn=bgmOn; localStorage.setItem('xy_snake_settings', JSON.stringify(d)); if(!bgmOn){ stopBGM(); } };
   menu.onclick=()=>{ panel.style.display = (panel.style.display==='block') ? 'none' : 'block'; };
   ctlRange.oninput=()=>{ ctlVal.textContent=ctlRange.value; };
+  liftRange.oninput=()=>{ liftVal.textContent=liftRange.value; };
   padRange.oninput=()=>{ padVal.textContent=padRange.value; };
   document.getElementById('apply').onclick=()=>{ applySettings(true); panel.style.display='none'; };
   document.getElementById('close').onclick=()=>{ panel.style.display='none'; };
   document.getElementById('reset').onclick=()=>{
     localStorage.removeItem('xy_snake_settings');
     ctlRange.value=22; ctlVal.textContent='22';
-    padRange.value=56; padVal.textContent='56';
+    liftRange.value=0; liftVal.textContent='0';
+    padRange.value=80; padVal.textContent='80';
     spdRange.value=7; musicURL.value=''; customURL='';
     sfxOn=true; bgmOn=true; sfxBtn.textContent='音效: 开'; bgmBtn.textContent='音乐: 开';
     applySettings(true);
@@ -298,22 +314,25 @@ if ('serviceWorker' in navigator) { window.addEventListener('load', ()=>navigato
     if(!paused && !over && !win){
       while(queue.length){ const [nx,ny]=queue.shift(); if(!(nx===-dir[0] && ny===-dir[1])){ dir=[nx,ny]; break; } }
       const [hx,hy]=snake[0]; const nx=hx+dir[0], ny=hy+dir[1];
-      if(nx<0||ny<0||nx>=W||ny>=H){ over=true; vibe(120); ensureAudio(); beep(120,0.25,'sawtooth',0.3); }
+      if(nx<0||ny<0||nx>=W||ny>=H){ over=true; V(120); ensureAudio(); beep(120,0.25,'sawtooth',0.3); }
       else{
         const head=[nx,ny];
-        for(let i=0;i<snake.length;i++){ if(snake[i][0]===head[0]&&snake[i][1]===head[1]){ over=true; vibe(120); ensureAudio(); beep(120,0.25,'sawtooth',0.3); break; } }
+        for(let i=0;i<snake.length;i++){ if(snake[i][0]===head[0]&&snake[i][1]===head[1]){ over=true; V(120); ensureAudio(); beep(120,0.25,'sawtooth',0.3); break; } }
         if(!over){
           snake.unshift(head);
           if(snake.length>len) snake.pop();
-          if(mail && head[0]===mail[0] && head[1]===mail[1]){ win=true; vibe(60); ensureAudio(); beep(880,0.15,'triangle',0.25); setTimeout(()=>beep(1175,0.15,'triangle',0.25),120); }
-          else if(apple && head[0]===apple[0] && head[1]===apple[1]){
-            len++; score+=10; speed=Math.min(14, speed+0.25); vibe(30); ensureAudio();
+          // apple win/collect
+          ensureApple();
+          if(head[0]===apple[0] && head[1]===apple[1]){
+            len++; score+=10; speed=Math.min(14, speed+0.25); V(30); ensureAudio();
             beep(523.25,0.06,'triangle',0.16); setTimeout(()=>beep(659.25,0.06,'triangle',0.16),70); setTimeout(()=>beep(783.99,0.07,'triangle',0.16),140);
             const occ=new Set(snake.map(JSON.stringify));
             apple=rndEmpty(occ);
             if(!mail && Math.random()<0.06){ mail=rndEmpty(occ); mailTTL=500; }
             speedEl.textContent='速度: '+speed.toFixed(1);
           }
+          // mail win
+          if(mail && head[0]===mail[0] && head[1]===mail[1]){ win=true; V(60); ensureAudio(); beep(880,0.15,'triangle',0.25); setTimeout(()=>beep(1175,0.15,'triangle',0.25),120); }
         }
       }
     }
@@ -322,7 +341,6 @@ if ('serviceWorker' in navigator) { window.addEventListener('load', ()=>navigato
     setTimeout(tick, 1000/Math.max(5, speed));
   }
 
-  function vibe(ms){ try{ if('vibrate' in navigator) navigator.vibrate(ms);}catch(e){} }
   function rr(x,y,w,h,r){ r=Math.min(r,w/2,h/2); ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
   function cell(x,y,color,rad=8){ const px=x*TILE, py=y*TILE; ctx.fillStyle=color; rr(px+1,py+1,TILE-2,TILE-2,rad); ctx.fill(); }
   function head(x,y){
@@ -340,17 +358,15 @@ if ('serviceWorker' in navigator) { window.addEventListener('load', ()=>navigato
   }
 
   function draw(){
-    // grid
     ctx.clearRect(0,0,cv.width,cv.height);
     ctx.strokeStyle='#ffffff35'; ctx.lineWidth=0.6;
     for(let x=0;x<=W;x++){ ctx.beginPath(); ctx.moveTo(x*TILE+0.5,0); ctx.lineTo(x*TILE+0.5,H*TILE); ctx.stroke(); }
     for(let y=0;y<=H;y++){ ctx.beginPath(); ctx.moveTo(0,y*TILE+0.5); ctx.lineTo(W*TILE,y*TILE+0.5); ctx.stroke(); }
 
-    // items
+    ensureApple();
     if(apple) drawApple(apple[0], apple[1]);
     if(mail) drawMail(mail[0], mail[1]);
 
-    // snake
     for(let i=0;i<snake.length;i++){ const [x,y]=snake[i]; if(i===0) head(x,y); else cell(x,y,COL.body,10); }
 
     scoreEl.textContent='分数: '+score;
