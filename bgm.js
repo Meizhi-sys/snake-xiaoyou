@@ -9,7 +9,7 @@
     if (!audioEl) {
       audioEl = new Audio(URL_FRIENDSHIP);
       audioEl.loop = true;
-      audioEl.volume = 0.5;
+      audioEl.volume = 0.8;
     }
     return audioEl;
   }
@@ -19,7 +19,7 @@
       if (!AC) return null;
       ac = new AC();
       master = ac.createGain();
-      master.gain.value = 0.25;
+      master.gain.value = 0.35;
       master.connect(ac.destination);
     }
     return ac;
@@ -53,7 +53,7 @@
   function cacheBGM() {
     if (!('caches' in window)) return;
     fetch(URL_FRIENDSHIP, { mode: 'no-cors' })
-      .then(resp => caches.open('snake-pwa-v6-10').then(c => c.put(URL_FRIENDSHIP, resp)))
+      .then(resp => caches.open('snake-pwa-v6-11').then(c => c.put(URL_FRIENDSHIP, resp)))
       .catch(()=>{});
   }
 
