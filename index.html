@@ -49,6 +49,29 @@
           transform: scale(.86); opacity:0; transition: transform .18s ease, opacity .18s ease;
           touch-action: pan-y; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
           padding-bottom: calc(env(safe-area-inset-bottom) + 80px); } /* 预留空间让底部按钮可点 */
+  #panel{
+  position:absolute; top:40px; right:6px;
+  background:#fff7fb; border:1px solid #ffd1e2; border-radius:12px; padding:10px;
+  box-shadow:0 14px 38px rgba(0,0,0,.12);
+  min-width:320px; max-width:92vw;
+
+  /* 关键：面板自己滚，不受 body 的 touch-action:none 限制 */
+  max-height: min(calc(var(--vh) * 78), calc(100vh - 88px));
+  overflow: auto;
+  touch-action: auto;                  /* <- 从 pan-y 改成 auto，更稳 */
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+
+  /* 为底部 sticky 区多留空间，保证“应用/关闭”能被完全滚到并可点 */
+  padding-bottom: calc(env(safe-area-inset-bottom) + 160px);
+
+  /* 动画保留 */
+  transform: scale(.86); opacity:0; transition: transform .18s ease, opacity .18s ease;
+}
+#panel .sticky{
+  position: sticky; bottom: 0; z-index: 1;
+  background:#fff7fb; padding-top:6px;
+}
   #panelMask.show #panel{ transform: scale(1); opacity:1; }
   #panel label{ font-size:12px; display:block; margin:6px 0 2px; }
   #panel input[type=range], #panel select{ width:260px; max-width:70vw; }
