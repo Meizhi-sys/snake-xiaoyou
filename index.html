@@ -3,27 +3,30 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
-<title>粉粉贪吃蛇·小悠特别版 (PWA v6.5)</title>
+<title>粉粉贪吃蛇·小悠特别版 (PWA v6.6)</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#ffd6e6">
 <link rel="apple-touch-icon" href="icon-512.png">
 <style>
   :root{
     --vh: 1vh;
-    --controlsH: 22;           /* % of screen height, now can go to 100 via Settings */
-    --controlsLift: 0;         /* px upward nudge for the whole controls area */
-    --actionsPadRight: 80;     /* px inward padding for right-bottom buttons, range up to 200 */
+    --controlsH: 45;
+    --controlsLift: 44;
+    --actionsPadRight: 30;
     --tile: 22;
     --gap: 12px;
   }
-  html, body { margin:0; height:calc(var(--vh) * 100); background:#ffd6e6; color:#5a4750; font-family:-apple-system, system-ui, Segoe UI, Roboto, Helvetica, Arial; }
+  /* 固定背景 & 禁止页面晃动 */
+  html, body { margin:0; height:calc(var(--vh) * 100); overflow:hidden; background:#ffd6e6; color:#5a4750; font-family:-apple-system, system-ui, Segoe UI, Roboto, Helvetica, Arial;
+               overscroll-behavior:none; touch-action:none; }
   body::before{ content:''; position:fixed; inset:0; z-index:-2; background:linear-gradient(180deg,#ffd6e6 0%,#ffe9f1 100%); }
-  body::after{ content:''; position:fixed; inset:0; z-index:-1; opacity:.18; background-image:url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScxMjAnIGhlaWdodD0nMTIwJyB2aWV3Qm94PScwIDAgMTIwIDEyMCc+CiAgPGcgZmlsbD0nbm9uZScgc3Ryb2tlPSdyZ2JhKDI1NSwxMjAsMTYwLDAuMjIpJyBzdHJva2Utd2lkdGg9JzMnPgogICAgPHBhdGggZD0nTTIwLDYwIFE0MCwyMCA2MCw0MCBRODAsMjAgMTAwLDYwIFE4MCwxMDAgNjAsODAgUTQwLDEwMCAyMCw2MCBaJy8+CiAgICA8Y2lyY2xlIGN4PSc2MCcgY3k9JzYwJyByPSc2JyBmaWxsPSdyZ2JhKDI1NSwxMjAsMTYwLDAuMjIpJy8+CiAgPC9nPgo8L3N2Zz4="); background-size:160px 160px; background-repeat:repeat; pointer-events:none; }
+  body::after{ content:''; position:fixed; inset:0; z-index:-1; opacity:.16; background-image:url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScxMjAnIGhlaWdodD0nMTIwJyB2aWV3Qm94PScwIDAgMTIwIDEyMCc+CiAgPGcgZmlsbD0nbm9uZScgc3Ryb2tlPSdyZ2JhKDI1NSwxMjAsMTYwLDAuMTgpJyBzdHJva2Utd2lkdGg9JzMnPgogICAgPHBhdGggZD0nTTIwLDYwIFE0MCwyMCA2MCw0MCBRODAsMjAgMTAwLDYwIFE4MCwxMDAgNjAsODAgUTQwLDEwMCAyMCw2MCBaJy8+CiAgICA8Y2lyY2xlIGN4PSc2MCcgY3k9JzYwJyByPSc2JyBmaWxsPSdyZ2JhKDI1NSwxMjAsMTYwLDAuMTgpJy8+CiAgPC9nPgo8L3N2Zz4="); background-size:160px 160px; background-repeat:repeat; pointer-events:none; }
+  /* 把整个 app 固定住 */
+  #wrap{ position:fixed; inset:0; display:flex; flex-direction:column; min-height:calc(var(--vh)*100); padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
 
-  #wrap{ display:flex; flex-direction:column; min-height:calc(var(--vh)*100); padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
   #gameArea{ height: calc(var(--vh) * (100 - var(--controlsH)) - env(safe-area-inset-top)); display:flex; align-items:center; justify-content:center; padding:4px 8px 2px; min-height:80px; }
   #stage{ position:relative; width:min(96vw, 900px); height:100%; display:flex; align-items:center; justify-content:center; }
-  canvas{ background:#fff5faCC; backdrop-filter: blur(2px); border-radius:16px; box-shadow:0 8px 28px rgba(255,105,180,.25); }
+  canvas{ background:#fff5faCC; backdrop-filter: blur(2px); border-radius:16px; box-shadow:0 8px 28px rgba(255,105,180,.25); touch-action:none; }
   #hud{ position:absolute; top:6px; left:8px; display:flex; gap:10px; font-size:14px; color:#614d55; }
   #msg{ position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:#ffffffcc; color:#c0396e; padding:10px 14px; border-radius:12px; display:none; box-shadow:0 6px 18px rgba(0,0,0,.08); }
   #win{ position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:#fff0f7; color:#c0396e; padding:12px 16px; border-radius:14px; display:none; box-shadow:0 8px 28px rgba(255,105,180,.25); }
@@ -66,16 +69,14 @@
         <button class="chip" id="bgm">音乐: 开</button>
       </div>
       <div id="panel">
-        <label>按键区高度（% 屏幕，0–100）：<span id="ctlVal">22</span>%</label>
-        <input id="ctlRange" type="range" min="0" max="100" step="1" value="22"/>
-        <label>按键区上移偏移（px，0–120）：<span id="liftVal">0</span></label>
-        <input id="liftRange" type="range" min="0" max="120" step="2" value="0"/>
-        <label>右下角按钮向内偏移（px，0–200）：<span id="padVal">80</span></label>
-        <input id="padRange" type="range" min="0" max="200" step="2" value="80"/>
+        <label>按键区高度（% 屏幕，0–100）：<span id="ctlVal">45</span>%</label>
+        <input id="ctlRange" type="range" min="0" max="100" step="1" value="45"/>
+        <label>按键区上移偏移（px，0–120）：<span id="liftVal">44</span></label>
+        <input id="liftRange" type="range" min="0" max="120" step="2" value="44"/>
+        <label>右下角按钮向内偏移（px，0–200）：<span id="padVal">30</span></label>
+        <input id="padRange" type="range" min="0" max="200" step="2" value="30"/>
         <label>蛇速起始值：</label>
         <input id="spdRange" type="range" min="5" max="10" step="0.5" value="7"/>
-        <label style="margin-top:8px;">自定义 BGM（MP3 直链，可选）：</label>
-        <input id="musicURL" type="url" placeholder="https://.../happy.mp3"/>
         <div style="margin-top:8px; display:flex; gap:6px; flex-wrap:wrap;">
           <button class="chip" id="apply">应用并保存</button>
           <button class="chip" id="close">关闭</button>
@@ -135,12 +136,10 @@ if ('serviceWorker' in navigator) { window.addEventListener('load', ()=>navigato
   // Persisted settings
   const saved = JSON.parse(localStorage.getItem('xy_snake_settings')||'{}');
   function setVar(name, val){ document.documentElement.style.setProperty(name, val); }
-
-  if(saved.controlsH){ setVar('--controlsH', saved.controlsH); }
-  if(saved.controlsLift){ setVar('--controlsLift', saved.controlsLift); }
-  if(saved.actionsPadRight){ setVar('--actionsPadRight', saved.actionsPadRight); }
+  if(saved.controlsH) setVar('--controlsH', saved.controlsH);
+  if(saved.controlsLift) setVar('--controlsLift', saved.controlsLift);
+  if(saved.actionsPadRight) setVar('--actionsPadRight', saved.actionsPadRight);
   let startSpeed = saved.startSpeed ? parseFloat(saved.startSpeed) : 7;
-  let customURL = saved.musicURL || '';
   let sfxOn = saved.sfxOn===false ? false : true;
   let bgmOn = saved.bgmOn===false ? false : true;
 
@@ -153,7 +152,6 @@ if ('serviceWorker' in navigator) { window.addEventListener('load', ()=>navigato
     cv.height= Math.floor(cssH * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
-
   function fit(){
     const stage=document.getElementById('stage');
     const gw=stage.clientWidth, gh=stage.clientHeight;
@@ -164,43 +162,14 @@ if ('serviceWorker' in navigator) { window.addEventListener('load', ()=>navigato
   }
   new ResizeObserver(fit).observe(document.getElementById('stage')); fit();
 
-  const COL={ grid:'#ffffff33', apple:'#ff6b88', mail:'#ff5fa3', body:'#ff9fbc', head:'#ff6fa5', eye:'#4c2d3a' };
+  const COL={ grid:'#ffffff33', apple:'#ff5fa3', body:'#ff9fbc', head:'#ff6fa5', eye:'#4c2d3a' };
 
-  // --- Audio ---
+  // --- Audio (Friendship) ---
   const DEFAULT_BGM = "https://files.freemusicarchive.org/storage-freemusicarchive-org/music/no_curator/Komiku/Its_time_for_adventure/Komiku_-_12_-_Friendship.mp3";
-  const AC=window.AudioContext||window.webkitAudioContext; let ac, master, bgmTimer=null, userAudio=null;
+  const AC=window.AudioContext||window.webkitAudioContext; let ac, master, userAudio=null;
   function ensureAudio(){ if(!ac){ ac=new AC(); master=ac.createGain(); master.gain.value=0.6; master.connect(ac.destination);} }
   function beep(f=660,d=0.06,t='triangle',g=0.18){ if(!sfxOn||!ac) return; const o=ac.createOscillator(), gNode=ac.createGain(); o.type=t; o.frequency.value=f; gNode.gain.value=g; o.connect(gNode); gNode.connect(master); const t0=ac.currentTime; o.start(t0); gNode.gain.exponentialRampToValueAtTime(0.001,t0+d); o.stop(t0+d); }
-  function startDefaultBGMWebAudio(){
-    if(!bgmOn||!ac||bgmTimer || userAudio) return;
-    let t=ac.currentTime+0.05;
-    function bar(){
-      const chords=[[261.63,392.00],[196.00,392.00],[220.00,440.00],[174.61,349.23]];
-      for(let k=0;k<chords.length;k++){
-        const [f1,f2]=chords[k];
-        const o1=ac.createOscillator(), o2=ac.createOscillator();
-        const g=ac.createGain(); g.gain.value=0.05; o1.type='triangle'; o2.type='sine';
-        o1.frequency.value=f1; o2.frequency.value=f2;
-        o1.connect(g); o2.connect(g); g.connect(master);
-        o1.start(t+k*0.6); o2.start(t+k*0.6);
-        g.gain.setValueAtTime(0.05, t+k*0.6);
-        g.gain.exponentialRampToValueAtTime(0.0001, t+k*0.6+0.55);
-        o1.stop(t+k*0.6+0.6); o2.stop(t+k*0.6+0.6);
-      }
-      t+=2.4;
-      if(bgmOn && !userAudio){ bgmTimer=setTimeout(bar, 2200); }
-    }
-    bar();
-  }
-  function startURLBGM(url){
-    try{
-      userAudio = new Audio(url);
-      userAudio.loop = true;
-      userAudio.volume = 0.42;
-      userAudio.play().catch(()=>{});
-    }catch(e){ console.log('music error',e); }
-  }
-  function stopBGM(){ if(bgmTimer){ clearTimeout(bgmTimer); bgmTimer=null; } if(userAudio){ try{userAudio.pause();}catch(e){} } }
+  function startURLBGM(url){ try{ userAudio = new Audio(url); userAudio.loop = true; userAudio.volume = 0.42; userAudio.play().catch(()=>{}); }catch(e){} }
 
   // --- Game ---
   let snake=[], dir=[1,0], queue=[], len=4;
@@ -208,10 +177,12 @@ if ('serviceWorker' in navigator) { window.addEventListener('load', ()=>navigato
   let apple=null, mail=null, mailTTL=0;
 
   function rndEmpty(occ){
-    while(true){
+    for(let t=0;t<2000;t++){
       const c=[Math.floor(Math.random()*W), Math.floor(Math.random()*H)];
       if(!occ.has(JSON.stringify(c))) return c;
     }
+    for(let y=0;y<H;y++) for(let x=0;x<W;x++){ if(!occ.has(JSON.stringify([x,y]))) return [x,y]; }
+    return [0,0];
   }
   function ensureApple(){
     if(!apple){
@@ -219,7 +190,6 @@ if ('serviceWorker' in navigator) { window.addEventListener('load', ()=>navigato
       apple = rndEmpty(occ);
     }
   }
-
   function initState(){
     const cx=Math.floor(W/2), cy=Math.floor(H/2);
     snake=[[cx,cy]]; dir=[1,0]; queue=[]; len=4; score=0; paused=false; over=false; win=false;
@@ -229,21 +199,16 @@ if ('serviceWorker' in navigator) { window.addEventListener('load', ()=>navigato
   }
 
   function setDir(nx,ny){ if(nx===-dir[0] && ny===-dir[1]) return; queue.push([nx,ny]); if(sfxOn) beep(240,0.05,'square',0.06); }
+  const V=(ms)=>{ try{ if('vibrate' in navigator) navigator.vibrate(ms);}catch(e){} };
 
-  const V=(ms)=>{ try{ if('vibrate' in navigator) navigator.vibrate(ms);}catch(e){} }
-  function showToast(){ const t=toast; t.style.display='block'; setTimeout(()=>t.style.display='none', 1800); }
+  // 音乐引导
+  function showToast(){ const t=document.getElementById('toast'); t.style.display='block'; setTimeout(()=>t.style.display='none', 1800); }
   window.addEventListener('load', ()=>{ if(bgmOn) showToast(); });
-  ['touchstart','mousedown'].forEach(ev=>window.addEventListener(ev,()=>{
-    ensureAudio();
-    if(bgmOn){
-      const url = (customURL && customURL.length>6) ? customURL : DEFAULT_BGM;
-      if(url && url.startsWith('http')){ startURLBGM(url); } else { startDefaultBGMWebAudio(); }
-    }
-  },{once:true}));
+  ['touchstart','mousedown'].forEach(ev=>window.addEventListener(ev,()=>{ ensureAudio(); if(bgmOn) startURLBGM(DEFAULT_BGM); },{once:true}));
 
+  // Buttons
   document.getElementById('pause').onclick=()=>{ ensureAudio(); paused=!paused; V(8); };
   document.getElementById('restart').onclick=()=>{ ensureAudio(); initState(); V(15); };
-
   document.getElementById('up').onclick=()=>{ ensureAudio(); setDir(0,-1); V(10); };
   document.getElementById('down').onclick=()=>{ ensureAudio(); setDir(0, 1); V(10); };
   document.getElementById('left').onclick=()=>{ ensureAudio(); setDir(-1,0); V(10); };
@@ -254,15 +219,13 @@ if ('serviceWorker' in navigator) { window.addEventListener('load', ()=>navigato
   const ctlRange=document.getElementById('ctlRange'), ctlVal=document.getElementById('ctlVal');
   const liftRange=document.getElementById('liftRange'), liftVal=document.getElementById('liftVal');
   const padRange=document.getElementById('padRange'), padVal=document.getElementById('padVal');
-  const musicURL=document.getElementById('musicURL');
   const sfxBtn=document.getElementById('sfx'), bgmBtn=document.getElementById('bgm');
   const spdRange=document.getElementById('spdRange');
 
-  ctlRange.value = saved.controlsH || 22; ctlVal.textContent = ctlRange.value;
-  liftRange.value = saved.controlsLift || 0; liftVal.textContent = liftRange.value;
-  padRange.value = saved.actionsPadRight || 80; padVal.textContent = padRange.value;
+  ctlRange.value = saved.controlsH || 45; ctlVal.textContent = ctlRange.value;
+  liftRange.value = saved.controlsLift || 44; liftVal.textContent = liftRange.value;
+  padRange.value = saved.actionsPadRight || 30; padVal.textContent = padRange.value;
   spdRange.value = startSpeed;
-  if(customURL) musicURL.value = customURL;
   sfxBtn.textContent = '音效: ' + (sfxOn ? '开':'关');
   bgmBtn.textContent = '音乐: ' + (bgmOn ? '开':'关');
 
@@ -272,23 +235,20 @@ if ('serviceWorker' in navigator) { window.addEventListener('load', ()=>navigato
     setVar('--actionsPadRight', padRange.value);
     speed = parseFloat(spdRange.value);
     speedEl.textContent='速度: '+speed.toFixed(1);
-    customURL = musicURL.value.trim();
     if(persist){
       const data = {
         controlsH: ctlRange.value,
         controlsLift: liftRange.value,
         actionsPadRight: padRange.value,
         startSpeed: speed,
-        musicURL: customURL,
         sfxOn: sfxOn, bgmOn: bgmOn
       };
       localStorage.setItem('xy_snake_settings', JSON.stringify(data));
     }
     fit();
   }
-
   sfxBtn.onclick=()=>{ sfxOn=!sfxOn; sfxBtn.textContent='音效: '+(sfxOn?'开':'关'); const d=JSON.parse(localStorage.getItem('xy_snake_settings')||'{}'); d.sfxOn=sfxOn; localStorage.setItem('xy_snake_settings', JSON.stringify(d)); };
-  bgmBtn.onclick=()=>{ bgmOn=!bgmOn; bgmBtn.textContent='音乐: '+(bgmOn?'开':'关'); const d=JSON.parse(localStorage.getItem('xy_snake_settings')||'{}'); d.bgmOn=bgmOn; localStorage.setItem('xy_snake_settings', JSON.stringify(d)); if(!bgmOn){ stopBGM(); } };
+  bgmBtn.onclick=()=>{ bgmOn=!bgmOn; bgmBtn.textContent='音乐: '+(bgmOn?'开':'关'); const d=JSON.parse(localStorage.getItem('xy_snake_settings')||'{}'); d.bgmOn=bgmOn; localStorage.setItem('xy_snake_settings', JSON.stringify(d)); };
   menu.onclick=()=>{ panel.style.display = (panel.style.display==='block') ? 'none' : 'block'; };
   ctlRange.oninput=()=>{ ctlVal.textContent=ctlRange.value; };
   liftRange.oninput=()=>{ liftVal.textContent=liftRange.value; };
@@ -297,13 +257,19 @@ if ('serviceWorker' in navigator) { window.addEventListener('load', ()=>navigato
   document.getElementById('close').onclick=()=>{ panel.style.display='none'; };
   document.getElementById('reset').onclick=()=>{
     localStorage.removeItem('xy_snake_settings');
-    ctlRange.value=22; ctlVal.textContent='22';
-    liftRange.value=0; liftVal.textContent='0';
-    padRange.value=80; padVal.textContent='80';
-    spdRange.value=7; musicURL.value=''; customURL='';
+    ctlRange.value=45; ctlVal.textContent='45';
+    liftRange.value=44; liftVal.textContent='44';
+    padRange.value=30; padVal.textContent='30';
+    spdRange.value=7;
     sfxOn=true; bgmOn=true; sfxBtn.textContent='音效: 开'; bgmBtn.textContent='音乐: 开';
     applySettings(true);
   };
+
+  // Swipe
+  const stage=document.getElementById('stage'); let sx=0,sy=0,moved=false;
+  stage.addEventListener('touchstart',e=>{ const t=e.touches[0]; sx=t.clientX; sy=t.clientY; moved=false; },{passive:true});
+  stage.addEventListener('touchmove',e=>{ moved=true; },{passive:true});
+  stage.addEventListener('touchend',e=>{ if(!moved) return; ensureAudio(); const t=e.changedTouches[0]; const dx=t.clientX-sx, dy=t.clientY-sy; if(Math.abs(dx)>Math.abs(dy)) setDir(dx>0?1:-1,0); else setDir(0,dy>0?1:-1); },{passive:true});
 
   function reset(){
     initState();
@@ -321,17 +287,21 @@ if ('serviceWorker' in navigator) { window.addEventListener('load', ()=>navigato
         if(!over){
           snake.unshift(head);
           if(snake.length>len) snake.pop();
-          // apple win/collect
+
+          // 保证苹果存在
           ensureApple();
+
+          // 吃到苹果
           if(head[0]===apple[0] && head[1]===apple[1]){
             len++; score+=10; speed=Math.min(14, speed+0.25); V(30); ensureAudio();
             beep(523.25,0.06,'triangle',0.16); setTimeout(()=>beep(659.25,0.06,'triangle',0.16),70); setTimeout(()=>beep(783.99,0.07,'triangle',0.16),140);
             const occ=new Set(snake.map(JSON.stringify));
-            apple=rndEmpty(occ);
+            apple=rndEmpty(occ); // 由 rndEmpty 保证不重叠
             if(!mail && Math.random()<0.06){ mail=rndEmpty(occ); mailTTL=500; }
             speedEl.textContent='速度: '+speed.toFixed(1);
           }
-          // mail win
+
+          // 吃到💌直接通关
           if(mail && head[0]===mail[0] && head[1]===mail[1]){ win=true; V(60); ensureAudio(); beep(880,0.15,'triangle',0.25); setTimeout(()=>beep(1175,0.15,'triangle',0.25),120); }
         }
       }
@@ -349,10 +319,28 @@ if ('serviceWorker' in navigator) { window.addEventListener('load', ()=>navigato
     ctx.fillStyle=COL.eye; ctx.beginPath(); ctx.arc(px+TILE*0.35, py+TILE*0.40, 2.2, 0, Math.PI*2); ctx.fill();
     ctx.beginPath(); ctx.arc(px+TILE*0.65, py+TILE*0.40, 2.2, 0, Math.PI*2); ctx.fill();
   }
-  function drawApple(x,y){ cell(x,y,COL.apple,8); }
+
+  // 可爱糖果（更显眼，不是像素点）
+  function drawCandy(x,y){
+    const px=x*TILE, py=y*TILE;
+    const cx=px+TILE/2, cy=py+TILE/2, r=TILE*0.36;
+    // 左右包装
+    ctx.fillStyle = '#ffd1e6';
+    ctx.beginPath(); ctx.moveTo(px+2, cy); ctx.lineTo(px+6, cy-6); ctx.lineTo(px+6, cy+6); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(px+TILE-2, cy); ctx.lineTo(px+TILE-6, cy-6); ctx.lineTo(px+TILE-6, cy+6); ctx.closePath(); ctx.fill();
+    // 糖
+    const grd = ctx.createRadialGradient(cx-2, cy-2, 2, cx, cy, r+2);
+    grd.addColorStop(0, '#ff7fb3'); grd.addColorStop(1, '#ff5fa3');
+    ctx.fillStyle = grd; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.fill();
+    // 高光
+    ctx.fillStyle = '#ffffffa8'; ctx.beginPath(); ctx.arc(cx-4, cy-4, r*0.35, 0, Math.PI*2); ctx.fill();
+    // 细白环
+    ctx.strokeStyle='#ffffffb0'; ctx.lineWidth=1; ctx.beginPath(); ctx.arc(cx, cy, r*0.78, 0, Math.PI*2); ctx.stroke();
+  }
+
   function drawMail(x,y){
     const px=x*TILE, py=y*TILE;
-    ctx.fillStyle = COL.mail; rr(px+3,py+5,TILE-6,TILE-10,6); ctx.fill();
+    ctx.fillStyle = '#ff73b0'; rr(px+3,py+5,TILE-6,TILE-10,6); ctx.fill();
     ctx.fillStyle = '#ffffffcc'; ctx.beginPath(); ctx.moveTo(px+4, py+6); ctx.lineTo(px+TILE-4, py+6); ctx.lineTo(px+TILE/2, py+TILE/2); ctx.closePath(); ctx.fill();
     ctx.fillStyle = '#ffecf4'; ctx.fillRect(px+4, py+TILE/2-1, TILE-8, 2);
   }
@@ -364,10 +352,10 @@ if ('serviceWorker' in navigator) { window.addEventListener('load', ()=>navigato
     for(let y=0;y<=H;y++){ ctx.beginPath(); ctx.moveTo(0,y*TILE+0.5); ctx.lineTo(W*TILE,y*TILE+0.5); ctx.stroke(); }
 
     ensureApple();
-    if(apple) drawApple(apple[0], apple[1]);
+    if(apple) drawCandy(apple[0], apple[1]);
     if(mail) drawMail(mail[0], mail[1]);
 
-    for(let i=0;i<snake.length;i++){ const [x,y]=snake[i]; if(i===0) head(x,y); else cell(x,y,COL.body,10); }
+    for(let i=0;i<snake.length;i++){ const [x,y]=snake[i]; if(i===0) head(x,y); else cell(x,y, COL.body, 10); }
 
     scoreEl.textContent='分数: '+score;
     if(over){ msg.textContent='Game Over ～ 撞墙/咬到尾巴了'; msg.style.display='block'; } else if(win){ winEl.style.display='block'; } else { msg.style.display='none'; winEl.style.display='none'; }
