@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
-<title>粉粉贪吃蛇·小悠特别版 (v6.16+BGM)</title>
+<title>粉粉贪吃蛇·小悠特别版 (v6.16 修正版)</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#ffd6e6">
 <link rel="apple-touch-icon" href="icon-512.png">
@@ -45,18 +45,15 @@
   #panelMask.show{ display:block; }
   #panelMask::before{ content:''; position:absolute; inset:0; background:rgba(0,0,0,.12); backdrop-filter: blur(2px); }
   #panel{ position:absolute; top:40px; right:6px; background:#fff7fb; border:1px solid #ffd1e2; border-radius:12px; padding:10px;
-          box-shadow:0 14px 38px rgba(0,0,0,.12); min-width:320px; max-width:92vw; max-height: calc(var(--vh)*70); overflow:auto;
-          transform: scale(.86); opacity:0; transition: transform .18s ease, opacity .18s ease; }
+          box-shadow:0 14px 38px rgba(0,0,0,.12); min-width:320px; max-width:92vw;
+          max-height: calc(var(--vh)*72); overflow:auto;  /* ↑ 更高可视 + 可滚到底 */
+          transform: scale(.86); opacity:0; transition: transform .18s ease, opacity .18s ease;
+          touch-action: pan-y; -webkit-overflow-scrolling: touch; } /* iOS 滚动优化 */
   #panelMask.show #panel{ transform: scale(1); opacity:1; }
   #panel label{ font-size:12px; display:block; margin:6px 0 2px; }
   #panel input[type=range], #panel select{ width:260px; max-width:70vw; }
   #panel .row{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
   #panel .sticky{ position:sticky; bottom:0; background:#fff7fb; padding-top:6px; }
-  #panel{
-  touch-action: pan-y;                /* 允许垂直滚动（不受 body 的 touch-action:none 影响） */
-  -webkit-overflow-scrolling: touch;  /* iOS 惯性滚动 */
-  max-height: calc(var(--vh) * 72);   /* 略微加大可视高度，留出手指空间 */
-}
   #skins{ display:flex; gap:8px; flex-wrap:wrap; }
   .skin{ padding:6px 10px; border-radius:10px; border:1px solid #ffd1e2; background:#fff; cursor:pointer; }
   .skin.locked{ opacity:.5; filter:grayscale(1); }
@@ -308,14 +305,40 @@
   }
   renderSkins(); applyPalette();
 
-  // —— 背景音乐控制：点击“开始游戏”后播放并循环 ——
-  bgmEl.volume = 0.5;
-  function tryPlayBGM(){ if(!bgmOn) return; bgmEl.play().catch(()=>{}); }
-  startBtn.addEventListener('click',()=>{
-    tryPlayBGM();
+  /* ===== 背景音乐：强力解锁策略（支持 iOS） ===== */
+  let bgmTried=false;
+  bgmEl.volume=0.7; // 提高一点音量
+  function tryPlayBGM(){
+    if(!bgmOn) return Promise.resolve();
+    bgmEl.currentTime = 0;
+    const p = bgmEl.play();
+    if(p && typeof p.then==='function'){
+      return p.catch(()=>{
+        return new Promise(resolve=>{
+          const oneMore=()=>{ bgmEl.play().finally(resolve);
+            document.removeEventListener('touchend', oneMore);
+            document.removeEventListener('click', oneMore);
+          };
+          document.addEventListener('touchend', oneMore, {once:true});
+          document.addEventListener('click',    oneMore, {once:true});
+        });
+      });
+    }
+    return Promise.resolve();
+  }
+  function uiToast(t){
+    const m=document.getElementById('msg');
+    m.textContent=t; m.style.display='block';
+    setTimeout(()=>{ if(!over && !win) m.style.display='none'; },1200);
+  }
+  startBtn.addEventListener('click', async ()=>{
+    try{ await tryPlayBGM(); bgmTried=true; }catch(e){ uiToast('若无音乐，请检查静音拨片或音量～'); }
     startMask.style.display='none';
-    paused=false; // 确保开始运行
+    paused=false;
   });
+  // 兜底：首次触摸/点击也尝试一次
+  window.addEventListener('touchstart', ()=>{ if(!bgmTried){ tryPlayBGM().then(()=>bgmTried=true); } }, {once:true});
+  window.addEventListener('mousedown',  ()=>{ if(!bgmTried){ tryPlayBGM().then(()=>bgmTried=true); } }, {once:true});
 
   // 顶部按钮
   const sfxBtn=document.getElementById('sfx');
@@ -325,6 +348,7 @@
   bgmBtn.onclick=()=>{ bgmOn=!bgmOn; bgmBtn.textContent='音乐: '+(bgmOn?'开':'关'); saveSettings(); if(bgmOn) tryPlayBGM(); else bgmEl.pause(); };
   sfxBtn.onclick=()=>{ sfxOn=!sfxOn; sfxBtn.textContent='音效: '+(sfxOn?'开':'关'); saveSettings(); };
 
+  // 面板开关
   function togglePanel(show){ if(show){ panelMask.classList.add('show'); } else { panelMask.classList.remove('show'); } }
   document.getElementById('menu').onclick=()=>togglePanel(true);
   panelMask.addEventListener('click', (e)=>{ if(e.target===panelMask) togglePanel(false); });
@@ -371,6 +395,7 @@
     fit(); if(needReset) initState();
   }
 
+  // 触控/按键
   let sx=0,sy=0,moved=false; const stage=document.getElementById('stage');
   stage.addEventListener('touchstart',e=>{ const t=e.touches[0]; sx=t.clientX; sy=t.clientY; moved=false; },{passive:true});
   stage.addEventListener('touchmove',e=>{ moved=true; },{passive:true});
@@ -378,11 +403,13 @@
 
   document.getElementById('pause').onclick=()=>{ paused=!paused; vibr(8); };
   document.getElementById('restart').onclick=()=>{ initState(); vibr(15); };
+
   document.getElementById('up').onclick=()=>{ setDir(0,-1); vibr(10); };
   document.getElementById('down').onclick=()=>{ setDir(0, 1); vibr(10); };
   document.getElementById('left').onclick=()=>{ setDir(-1,0); vibr(10); };
   document.getElementById('right').onclick=()=>{ setDir(1, 0); vibr(10); };
 
+  // 画布自适配
   function setupCanvas(){
     const dpr=window.devicePixelRatio||1;
     const cssW=cv.clientWidth, cssH=cv.clientHeight;
@@ -403,6 +430,7 @@
   }
   new ResizeObserver(fit).observe(document.getElementById('stage')); fit();
 
+  // 游戏状态
   let snake=[], dir=[1,0], queue=[];
   let len=4, speed=startSpeed, score=0, level=1, paused=true, over=false, win=false, overReason='';
   let apple=null, lastAppleAt=0; let mail=null, mailTTL=0;
@@ -421,6 +449,7 @@
 
   function setDir(nx,ny){ if(nx===-dir[0]&&ny===-dir[1]) return; queue.push([nx,ny]); }
 
+  // 食物生成：避开蛇身 + 看门狗 5s
   function spawnAppleAvoidingSnake(occ){
     for(let t=0;t<2000;t++){
       const c=[Math.floor(Math.random()*W),Math.floor(Math.random()*H)];
@@ -449,6 +478,7 @@
     }
   }
 
+  // 彩纸
   let confettiStart=0, confettiP=[];
   function popConfetti(){
     confettiStart=performance.now(); confettiP=[];
@@ -470,6 +500,7 @@
     if(now-confettiStart<confettiDur) requestAnimationFrame(stepConfetti); else conf.style.display='none';
   }
 
+  // 通关奖励：加分 / 解锁皮肤
   function rewardWin(){
     if(rewardMode==='points'){
       score+=rewardPoints; hudScore.textContent='分数: '+score+' (+'+rewardPoints+')';
