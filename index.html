@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
-<title>粉粉贪吃蛇·小悠特别版 (PWA v6.6)</title>
+<title>粉粉贪吃蛇·小悠特别版 (PWA v6.7)</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#ffd6e6">
 <link rel="apple-touch-icon" href="icon-512.png">
@@ -110,6 +110,7 @@
 
 <div id="toast">首次点一下屏幕以开启音乐 🎵</div>
 
+<script src="./bgm.js"></script>
 <script>
 // SW
 if ('serviceWorker' in navigator) { window.addEventListener('load', ()=>navigator.serviceWorker.register('service-worker.js')); }
@@ -133,15 +134,16 @@ if ('serviceWorker' in navigator) { window.addEventListener('load', ()=>navigato
   const msg=document.getElementById('msg'), winEl=document.getElementById('win');
   const toast=document.getElementById('toast');
 
-  // Persisted settings
-  const saved = JSON.parse(localStorage.getItem('xy_snake_settings')||'{}');
+  // Persisted settings (only override defaults if they actually exist)
+  const savedRaw = localStorage.getItem('xy_snake_settings');
+  const saved = savedRaw ? JSON.parse(savedRaw) : null;
   function setVar(name, val){ document.documentElement.style.setProperty(name, val); }
-  if(saved.controlsH) setVar('--controlsH', saved.controlsH);
-  if(saved.controlsLift) setVar('--controlsLift', saved.controlsLift);
-  if(saved.actionsPadRight) setVar('--actionsPadRight', saved.actionsPadRight);
-  let startSpeed = saved.startSpeed ? parseFloat(saved.startSpeed) : 7;
-  let sfxOn = saved.sfxOn===false ? false : true;
-  let bgmOn = saved.bgmOn===false ? false : true;
+  if(saved && saved.controlsH!=null) setVar('--controlsH', saved.controlsH);
+  if(saved && saved.controlsLift!=null) setVar('--controlsLift', saved.controlsLift);
+  if(saved && saved.actionsPadRight!=null) setVar('--actionsPadRight', saved.actionsPadRight);
+  let startSpeed = (saved && saved.startSpeed!=null) ? parseFloat(saved.startSpeed) : 7;
+  let sfxOn = !(saved && saved.sfxOn===false);
+  let bgmOn = !(saved && saved.bgmOn===false);
 
   // DPR crisp canvas
   function setupCanvas(){
@@ -164,55 +166,57 @@ if ('serviceWorker' in navigator) { window.addEventListener('load', ()=>navigato
 
   const COL={ grid:'#ffffff33', apple:'#ff5fa3', body:'#ff9fbc', head:'#ff6fa5', eye:'#4c2d3a' };
 
-  // --- Audio (Friendship) ---
-  const DEFAULT_BGM = "https://files.freemusicarchive.org/storage-freemusicarchive-org/music/no_curator/Komiku/Its_time_for_adventure/Komiku_-_12_-_Friendship.mp3";
-  const AC=window.AudioContext||window.webkitAudioContext; let ac, master, userAudio=null;
-  function ensureAudio(){ if(!ac){ ac=new AC(); master=ac.createGain(); master.gain.value=0.6; master.connect(ac.destination);} }
-  function beep(f=660,d=0.06,t='triangle',g=0.18){ if(!sfxOn||!ac) return; const o=ac.createOscillator(), gNode=ac.createGain(); o.type=t; o.frequency.value=f; gNode.gain.value=g; o.connect(gNode); gNode.connect(master); const t0=ac.currentTime; o.start(t0); gNode.gain.exponentialRampToValueAtTime(0.001,t0+d); o.stop(t0+d); }
-  function startURLBGM(url){ try{ userAudio = new Audio(url); userAudio.loop = true; userAudio.volume = 0.42; userAudio.play().catch(()=>{}); }catch(e){} }
+  // --- Audio (Friendship via bgm.js) ---
+  function playBGM(){ if(window.__xyPlayBGM && bgmOn) window.__xyPlayBGM(); }
 
   // --- Game ---
   let snake=[], dir=[1,0], queue=[], len=4;
   let speed=startSpeed, score=0, paused=false, over=false, win=false;
   let apple=null, mail=null, mailTTL=0;
 
-  function rndEmpty(occ){
+  function spawnAppleAvoidingSnake(occ){
+    // Try random first
     for(let t=0;t<2000;t++){
       const c=[Math.floor(Math.random()*W), Math.floor(Math.random()*H)];
       if(!occ.has(JSON.stringify(c))) return c;
     }
-    for(let y=0;y<H;y++) for(let x=0;x<W;x++){ if(!occ.has(JSON.stringify([x,y]))) return [x,y]; }
-    return [0,0];
+    // Fallback deterministic scan
+    for(let y=0;y<H;y++){ for(let x=0;x<W;x++){ const key=JSON.stringify([x,y]); if(!occ.has(key)) return [x,y]; } }
+    return null; // full board (should be rare -> treat as win state later)
   }
   function ensureApple(){
     if(!apple){
       const occ=new Set(snake.map(JSON.stringify));
-      apple = rndEmpty(occ);
+      apple = spawnAppleAvoidingSnake(occ);
+      if(!apple && snake.length >= W*H-1){
+        // Board full enough — treat as win
+        win = true;
+      }
     }
   }
   function initState(){
     const cx=Math.floor(W/2), cy=Math.floor(H/2);
     snake=[[cx,cy]]; dir=[1,0]; queue=[]; len=4; score=0; paused=false; over=false; win=false;
     apple=null; mail=null; mailTTL=0;
-    ensureApple();
+    ensureApple(); // 开局就有
     speedEl.textContent='速度: '+speed.toFixed(1);
   }
 
-  function setDir(nx,ny){ if(nx===-dir[0] && ny===-dir[1]) return; queue.push([nx,ny]); if(sfxOn) beep(240,0.05,'square',0.06); }
+  function setDir(nx,ny){ if(nx===-dir[0] && ny===-dir[1]) return; queue.push([nx,ny]); if(sfxOn) { try{ const AC=window.AudioContext||window.webkitAudioContext; }catch(e){} } }
+
   const V=(ms)=>{ try{ if('vibrate' in navigator) navigator.vibrate(ms);}catch(e){} };
 
-  // 音乐引导
-  function showToast(){ const t=document.getElementById('toast'); t.style.display='block'; setTimeout(()=>t.style.display='none', 1800); }
-  window.addEventListener('load', ()=>{ if(bgmOn) showToast(); });
-  ['touchstart','mousedown'].forEach(ev=>window.addEventListener(ev,()=>{ ensureAudio(); if(bgmOn) startURLBGM(DEFAULT_BGM); },{once:true}));
+  // 音乐引导：首次点击任意处开始播放
+  window.addEventListener('touchstart', playBGM, {once:true});
+  window.addEventListener('mousedown', playBGM, {once:true});
 
   // Buttons
-  document.getElementById('pause').onclick=()=>{ ensureAudio(); paused=!paused; V(8); };
-  document.getElementById('restart').onclick=()=>{ ensureAudio(); initState(); V(15); };
-  document.getElementById('up').onclick=()=>{ ensureAudio(); setDir(0,-1); V(10); };
-  document.getElementById('down').onclick=()=>{ ensureAudio(); setDir(0, 1); V(10); };
-  document.getElementById('left').onclick=()=>{ ensureAudio(); setDir(-1,0); V(10); };
-  document.getElementById('right').onclick=()=>{ ensureAudio(); setDir(1, 0); V(10); };
+  document.getElementById('pause').onclick=()=>{ paused=!paused; V(8); };
+  document.getElementById('restart').onclick=()=>{ initState(); V(15); };
+  document.getElementById('up').onclick=()=>{ setDir(0,-1); V(10); };
+  document.getElementById('down').onclick=()=>{ setDir(0, 1); V(10); };
+  document.getElementById('left').onclick=()=>{ setDir(-1,0); V(10); };
+  document.getElementById('right').onclick=()=>{ setDir(1, 0); V(10); };
 
   // Settings panel
   const menu=document.getElementById('menu'), panel=document.getElementById('panel');
@@ -222,17 +226,18 @@ if ('serviceWorker' in navigator) { window.addEventListener('load', ()=>navigato
   const sfxBtn=document.getElementById('sfx'), bgmBtn=document.getElementById('bgm');
   const spdRange=document.getElementById('spdRange');
 
-  ctlRange.value = saved.controlsH || 45; ctlVal.textContent = ctlRange.value;
-  liftRange.value = saved.controlsLift || 44; liftVal.textContent = liftRange.value;
-  padRange.value = saved.actionsPadRight || 30; padVal.textContent = padRange.value;
-  spdRange.value = startSpeed;
+  // reflect saved UI if present; otherwise keep defaults shown
+  if(saved && saved.controlsH!=null){ ctlRange.value = saved.controlsH; ctlVal.textContent = ctlRange.value; }
+  if(saved && saved.controlsLift!=null){ liftRange.value = saved.controlsLift; liftVal.textContent = liftRange.value; }
+  if(saved && saved.actionsPadRight!=null){ padRange.value = saved.actionsPadRight; padVal.textContent = padRange.value; }
+  spdRange.value = speed;
   sfxBtn.textContent = '音效: ' + (sfxOn ? '开':'关');
   bgmBtn.textContent = '音乐: ' + (bgmOn ? '开':'关');
 
   function applySettings(persist){
-    setVar('--controlsH', ctlRange.value);
-    setVar('--controlsLift', liftRange.value);
-    setVar('--actionsPadRight', padRange.value);
+    document.documentElement.style.setProperty('--controlsH', ctlRange.value);
+    document.documentElement.style.setProperty('--controlsLift', liftRange.value);
+    document.documentElement.style.setProperty('--actionsPadRight', padRange.value);
     speed = parseFloat(spdRange.value);
     speedEl.textContent='速度: '+speed.toFixed(1);
     if(persist){
@@ -247,8 +252,8 @@ if ('serviceWorker' in navigator) { window.addEventListener('load', ()=>navigato
     }
     fit();
   }
-  sfxBtn.onclick=()=>{ sfxOn=!sfxOn; sfxBtn.textContent='音效: '+(sfxOn?'开':'关'); const d=JSON.parse(localStorage.getItem('xy_snake_settings')||'{}'); d.sfxOn=sfxOn; localStorage.setItem('xy_snake_settings', JSON.stringify(d)); };
-  bgmBtn.onclick=()=>{ bgmOn=!bgmOn; bgmBtn.textContent='音乐: '+(bgmOn?'开':'关'); const d=JSON.parse(localStorage.getItem('xy_snake_settings')||'{}'); d.bgmOn=bgmOn; localStorage.setItem('xy_snake_settings', JSON.stringify(d)); };
+  sfxBtn.onclick=()=>{ sfxOn=!sfxOn; sfxBtn.textContent='音效: '+(sfxOn?'开':'关'); const d = saved || {}; d.sfxOn = sfxOn; localStorage.setItem('xy_snake_settings', JSON.stringify(d)); };
+  bgmBtn.onclick=()=>{ bgmOn=!bgmOn; bgmBtn.textContent='音乐: '+(bgmOn?'开':'关'); const d = saved || {}; d.bgmOn = bgmOn; localStorage.setItem('xy_snake_settings', JSON.stringify(d)); if(bgmOn) playBGM(); };
   menu.onclick=()=>{ panel.style.display = (panel.style.display==='block') ? 'none' : 'block'; };
   ctlRange.oninput=()=>{ ctlVal.textContent=ctlRange.value; };
   liftRange.oninput=()=>{ liftVal.textContent=liftRange.value; };
@@ -269,7 +274,7 @@ if ('serviceWorker' in navigator) { window.addEventListener('load', ()=>navigato
   const stage=document.getElementById('stage'); let sx=0,sy=0,moved=false;
   stage.addEventListener('touchstart',e=>{ const t=e.touches[0]; sx=t.clientX; sy=t.clientY; moved=false; },{passive:true});
   stage.addEventListener('touchmove',e=>{ moved=true; },{passive:true});
-  stage.addEventListener('touchend',e=>{ if(!moved) return; ensureAudio(); const t=e.changedTouches[0]; const dx=t.clientX-sx, dy=t.clientY-sy; if(Math.abs(dx)>Math.abs(dy)) setDir(dx>0?1:-1,0); else setDir(0,dy>0?1:-1); },{passive:true});
+  stage.addEventListener('touchend',e=>{ if(!moved) return; const t=e.changedTouches[0]; const dx=t.clientX-sx, dy=t.clientY-sy; if(Math.abs(dx)>Math.abs(dy)) setDir(dx>0?1:-1,0); else setDir(0,dy>0?1:-1); },{passive:true});
 
   function reset(){
     initState();
@@ -280,29 +285,30 @@ if ('serviceWorker' in navigator) { window.addEventListener('load', ()=>navigato
     if(!paused && !over && !win){
       while(queue.length){ const [nx,ny]=queue.shift(); if(!(nx===-dir[0] && ny===-dir[1])){ dir=[nx,ny]; break; } }
       const [hx,hy]=snake[0]; const nx=hx+dir[0], ny=hy+dir[1];
-      if(nx<0||ny<0||nx>=W||ny>=H){ over=true; V(120); ensureAudio(); beep(120,0.25,'sawtooth',0.3); }
+      if(nx<0||ny<0||nx>=W||ny>=H){ over=true; }
       else{
         const head=[nx,ny];
-        for(let i=0;i<snake.length;i++){ if(snake[i][0]===head[0]&&snake[i][1]===head[1]){ over=true; V(120); ensureAudio(); beep(120,0.25,'sawtooth',0.3); break; } }
+        for(let i=0;i<snake.length;i++){ if(snake[i][0]===head[0]&&snake[i][1]===head[1]){ over=true; break; } }
         if(!over){
           snake.unshift(head);
           if(snake.length>len) snake.pop();
 
-          // 保证苹果存在
+          // 先保证有苹果（万无一失）
           ensureApple();
 
-          // 吃到苹果
-          if(head[0]===apple[0] && head[1]===apple[1]){
-            len++; score+=10; speed=Math.min(14, speed+0.25); V(30); ensureAudio();
-            beep(523.25,0.06,'triangle',0.16); setTimeout(()=>beep(659.25,0.06,'triangle',0.16),70); setTimeout(()=>beep(783.99,0.07,'triangle',0.16),140);
+          // 吃到苹果 → 立刻重生（严格避开蛇）
+          if(apple && head[0]===apple[0] && head[1]===apple[1]){
+            len++; score+=10; speed=Math.min(14, speed+0.25);
             const occ=new Set(snake.map(JSON.stringify));
-            apple=rndEmpty(occ); // 由 rndEmpty 保证不重叠
-            if(!mail && Math.random()<0.06){ mail=rndEmpty(occ); mailTTL=500; }
+            apple = spawnAppleAvoidingSnake(occ);
+            if(!apple && snake.length >= W*H-1){ win = true; }
+            // 💌 刷新概率
+            if(!mail && Math.random()<0.06){ mail = spawnAppleAvoidingSnake(occ); mailTTL=500; }
             speedEl.textContent='速度: '+speed.toFixed(1);
           }
 
           // 吃到💌直接通关
-          if(mail && head[0]===mail[0] && head[1]===mail[1]){ win=true; V(60); ensureAudio(); beep(880,0.15,'triangle',0.25); setTimeout(()=>beep(1175,0.15,'triangle',0.25),120); }
+          if(mail && head[0]===mail[0] && head[1]===mail[1]){ win=true; }
         }
       }
     }
@@ -320,7 +326,7 @@ if ('serviceWorker' in navigator) { window.addEventListener('load', ()=>navigato
     ctx.beginPath(); ctx.arc(px+TILE*0.65, py+TILE*0.40, 2.2, 0, Math.PI*2); ctx.fill();
   }
 
-  // 可爱糖果（更显眼，不是像素点）
+  // 粉色糖果（显眼，不是像素点）
   function drawCandy(x,y){
     const px=x*TILE, py=y*TILE;
     const cx=px+TILE/2, cy=py+TILE/2, r=TILE*0.36;
