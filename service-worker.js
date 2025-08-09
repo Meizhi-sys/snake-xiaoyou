@@ -1,37 +1,31 @@
-const CACHE_NAME = 'snake-game-cache-v1';
-const ASSETS_TO_CACHE = [
-    '/',
-    '/index.html',
-    '/bgm.js',
-    '/friendship.mp3',
-    '/manifest.json'
+const CACHE_NAME = 'snake-xy-v650';
+const ASSETS = [
+  './',
+  './index.html',
+  './manifest.json',
+  './icon-192.png',
+  './icon-512.png',
+  './apple-touch-icon-180.png',
+  './friendship.mp3' // 如果暂时没有也没关系
 ];
 
-// 安装
-self.addEventListener('install', event => {
-    event.waitUntil(
-        caches.open(CACHE_NAME)
-            .then(cache => cache.addAll(ASSETS_TO_CACHE))
-    );
+self.addEventListener('install', e=>{
+  e.waitUntil(caches.open(CACHE_NAME).then(c=>c.addAll(ASSETS)));
+  self.skipWaiting();
 });
 
-// 激活
-self.addEventListener('activate', event => {
-    event.waitUntil(
-        caches.keys().then(keys =>
-            Promise.all(keys.map(key => {
-                if (key !== CACHE_NAME) {
-                    return caches.delete(key);
-                }
-            }))
-        )
-    );
+self.addEventListener('activate', e=>{
+  e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE_NAME).map(k=>caches.delete(k)))));
+  self.clients.claim();
 });
 
-// 请求拦截
-self.addEventListener('fetch', event => {
-    event.respondWith(
-        caches.match(event.request)
-            .then(response => response || fetch(event.request))
-    );
+self.addEventListener('fetch', e=>{
+  const req = e.request;
+  e.respondWith(
+    caches.match(req).then(r=> r || fetch(req).then(resp=>{
+      const copy = resp.clone();
+      caches.open(CACHE_NAME).then(c=> c.put(req, copy)).catch(()=>{});
+      return resp;
+    }).catch(()=> caches.match('./index.html')))
+  );
 });
