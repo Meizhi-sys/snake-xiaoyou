@@ -1,0 +1,16 @@
+{
+  "name": "Snake — Xiaoyou Edition",
+  "short_name": "Snake",
+  "description": "Cute Snake (PWA) for iOS — add to Home Screen to play offline.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#FBF7FF",
+  "theme_color": "#F8ECFF",
+  "icons": [
+    {
+      "src": "icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ]
+}

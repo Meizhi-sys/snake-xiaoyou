@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
+<title>Snake — Xiaoyou Edition (PWA)</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#F8ECFF">
+<link rel="apple-touch-icon" href="icon-512.png">
+<style>
+  html, body { margin:0; height:100%; background:#0f1219; color:#eaeaea; font-family: -apple-system, system-ui, Segoe UI, Roboto, Helvetica, Arial; }
+  #wrap { display:flex; flex-direction:column; height:100%; }
+  #topbar { padding:10px 14px; font-size:14px; display:flex; gap:12px; align-items:center; }
+  #topbar span { opacity:.9 }
+  #game { flex:1; display:flex; align-items:center; justify-content:center; position:relative; }
+  canvas { background:#0f1219; max-width: 96vw; max-height: 70vh; border-radius:12px; box-shadow:0 8px 28px rgba(0,0,0,.35); }
+  #btns { display:flex; justify-content:center; gap:12px; padding:10px 0 18px; flex-wrap:wrap; }
+  button {
+    background:#1b2130; color:#eaeaea; border:1px solid #2a3244; border-radius:10px;
+    padding:10px 14px; font-size:16px;
+  }
+  button:active { transform:scale(.98); }
+  #pad { position:absolute; inset:0; touch-action:none; }
+  #msg { position:absolute; inset:auto 0 14px 0; text-align:center; pointer-events:none; font-size:14px; color:#ffc5c5; }
+  .tag { padding:2px 8px; border-radius:8px; background:#2a3244; color:#cfd8ff; font-size:12px; }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="topbar">
+    <span class="tag">PWA</span>
+    <span id="score">Score: 0</span>
+    <span id="speed">Speed: 10</span>
+    <span id="tip">Swipe ←↑→↓ or use buttons · Share → Add to Home Screen</span>
+  </div>
+  <div id="game">
+    <canvas id="cv" width="660" height="480"></canvas>
+    <div id="pad"></div>
+    <div id="msg"></div>
+  </div>
+  <div id="btns">
+    <button id="up">↑</button>
+    <button id="left">←</button>
+    <button id="down">↓</button>
+    <button id="right">→</button>
+    <button id="pause">Pause</button>
+    <button id="restart">Restart</button>
+  </div>
+</div>
+<script>
+// ---- PWA registration ----
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('service-worker.js');
+  });
+}
+</script>
+<script>
+(function(){
+  const TILE=20, W=33, H=22;           // grid
+  const cv=document.getElementById('cv');
+  const ctx=cv.getContext('2d');
+  const scoreEl=document.getElementById('score');
+  const speedEl=document.getElementById('speed');
+  const msg=document.getElementById('msg');
+  const pad=document.getElementById('pad');
+
+  function fit(){
+    const vw = Math.min(window.innerWidth*0.96, 720);
+    const vh = Math.min(window.innerHeight*0.70, 520);
+    const scale = Math.min(vw/(W*TILE), vh/(H*TILE));
+    cv.style.width = (W*TILE*scale)+'px';
+    cv.style.height = (H*TILE*scale)+'px';
+  }
+  window.addEventListener('resize', fit); fit();
+
+  // palette
+  const BG = '#0f1219', GRID = '#151b26';
+  const SNAKE = '#46dc85', HEAD='#78ffb2', APPLE='#f05a5a', TXT='#eaeaea';
+
+  // state
+  let snake=[[Math.floor(W/2), Math.floor(H/2)]], dir=[1,0], queue=[], len=4;
+  let speed=10, score=0, paused=false, over=false;
+  let apple = rndEmpty(new Set(snake.map(JSON.stringify)));
+
+  function rndEmpty(occ){
+    while(true){
+      const c=[Math.floor(Math.random()*W), Math.floor(Math.random()*H)];
+      if(!occ.has(JSON.stringify(c))) return c;
+    }
+  }
+
+  function drawRect(x,y,color,r=5){
+    const px=x*TILE, py=y*TILE;
+    const w=TILE-1, h=TILE-1;
+    ctx.fillStyle=color;
+    roundRect(ctx, px, py, w, h, r); ctx.fill();
+  }
+
+  function roundRect(ctx, x, y, w, h, r){
+    r=Math.min(r, w/2, h/2);
+    ctx.beginPath();
+    ctx.moveTo(x+r, y);
+    ctx.arcTo(x+w, y,   x+w, y+h, r);
+    ctx.arcTo(x+w, y+h, x,   y+h, r);
+    ctx.arcTo(x,   y+h, x,   y,   r);
+    ctx.arcTo(x,   y,   x+w, y,   r);
+    ctx.closePath();
+  }
+
+  function setDir(nx,ny){
+    if(nx===-dir[0] && ny===-dir[1]) return;
+    queue.push([nx,ny]);
+  }
+
+  document.getElementById('up').onclick=()=>setDir(0,-1);
+  document.getElementById('down').onclick=()=>setDir(0,1);
+  document.getElementById('left').onclick=()=>setDir(-1,0);
+  document.getElementById('right').onclick=()=>setDir(1,0);
+  document.getElementById('pause').onclick=()=>paused=!paused;
+  document.getElementById('restart').onclick=()=>reset();
+
+  // swipe input
+  let sx=0, sy=0, moved=false;
+  pad.addEventListener('touchstart', e=>{ const t=e.touches[0]; sx=t.clientX; sy=t.clientY; moved=false; }, {passive:true});
+  pad.addEventListener('touchmove', e=>{ moved=true; }, {passive:true});
+  pad.addEventListener('touchend', e=>{
+    if(!moved) return;
+    const t=e.changedTouches[0]; const dx=t.clientX - sx, dy=t.clientY - sy;
+    if(Math.abs(dx) > Math.abs(dy)){
+      setDir(dx>0?1:-1, 0);
+    }else{
+      setDir(0, dy>0?1:-1);
+    }
+  }, {passive:true});
+
+  function reset(){
+    snake=[[Math.floor(W/2), Math.floor(H/2)]];
+    dir=[1,0]; queue=[]; len=4; speed=10; score=0; paused=false; over=false;
+    apple=rndEmpty(new Set(snake.map(JSON.stringify)));
+  }
+
+  function tick(){
+    if(!paused && !over){
+      while(queue.length){
+        const [nx,ny]=queue.shift();
+        if(!(nx===-dir[0] && ny===-dir[1])){ dir=[nx,ny]; break; }
+      }
+      const [hx,hy]=snake[0];
+      let nx=hx+dir[0], ny=hy+dir[1];
+      nx=(nx+W)%W; ny=(ny+H)%H;
+      const head=[nx,ny];
+
+      for(let i=0;i<snake.length;i++){
+        if(snake[i][0]===head[0] && snake[i][1]===head[1]){ over=true; break; }
+      }
+      if(!over){
+        snake.unshift(head);
+        if(snake.length>len) snake.pop();
+        if(head[0]===apple[0] && head[1]===apple[1]){
+          len++; score+=10; speed=Math.min(22, speed+0.5);
+          apple=rndEmpty(new Set(snake.map(JSON.stringify)));
+        }
+      }
+    }
+    draw();
+    setTimeout(tick, 1000/Math.max(5, speed));
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,cv.width,cv.height);
+    // grid lines
+    ctx.strokeStyle=GRID; ctx.lineWidth=1;
+    for(let x=0;x<=W;x++){ ctx.beginPath(); ctx.moveTo(x*TILE+0.5,0); ctx.lineTo(x*TILE+0.5,H*TILE); ctx.stroke(); }
+    for(let y=0;y<=H;y++){ ctx.beginPath(); ctx.moveTo(0,y*TILE+0.5); ctx.lineTo(W*TILE,y*TILE+0.5); ctx.stroke(); }
+
+    drawRect(apple[0], apple[1], APPLE, 6);
+    for(let i=0;i<snake.length;i++){
+      drawRect(snake[i][0], snake[i][1], i===0?HEAD:SNAKE, 6);
+    }
+    scoreEl.textContent = 'Score: '+score;
+    speedEl.textContent = 'Speed: '+speed.toFixed(1);
+    msg.textContent = paused ? 'Paused' : (over ? 'Game Over — tap Restart' : '');
+  }
+  tick();
+})();
+</script>
+</body>
+</html>
