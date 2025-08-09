@@ -3,56 +3,46 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
-<title>粉粉贪吃蛇·小悠特别版 (PWA v6)</title>
+<title>粉粉贪吃蛇·小悠特别版 (PWA v6.1)</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#ffd6e6">
 <link rel="apple-touch-icon" href="icon-512.png">
 <style>
   :root{
-    --padH: calc(25dvh + env(safe-area-inset-bottom));
+    --vh: 1vh; /* will be replaced by JS using visualViewport */
+    --controlsH: 25; /* percentage of viewport height */
     --tile: 22;
     --gap: 14px;
   }
-  html, body { margin:0; height:100dvh; background:#ffd6e6; color:#5a4750; font-family: -apple-system, system-ui, Segoe UI, Roboto, Helvetica, Arial; }
-  /* gradient + pattern */
-  body::before{
-    content:''; position:fixed; inset:0; z-index:-3;
-    background: linear-gradient(180deg, #ffd6e6 0%, #ffe9f1 100%);
-  }
-  body::after{
-    content:''; position:fixed; inset:0; z-index:-2; opacity:.20;
-    background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScxMjAnIGhlaWdodD0nMTIwJyB2aWV3Qm94PScwIDAgMTIwIDEyMCc+CiAgPGcgZmlsbD0nbm9uZScgc3Ryb2tlPSdyZ2JhKDI1NSwxMjAsMTYwLDAuMjUpJyBzdHJva2Utd2lkdGg9JzMnPgogICAgPHBhdGggZD0nTTIwLDYwIFE0MCwyMCA2MCw0MCBRODAsMjAgMTAwLDYwIFE4MCwxMDAgNjAsODAgUTQwLDEwMCAyMCw2MCBaJy8+CiAgICA8Y2lyY2xlIGN4PSc2MCcgY3k9JzYwJyByPSc2JyBmaWxsPSdyZ2JhKDI1NSwxMjAsMTYwLDAuMjUpJy8+CiAgPC9nPgo8L3N2Zz4="), url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScxMjAnIGhlaWdodD0nMTIwJyB2aWV3Qm94PScwIDAgMTIwIDEyMCc+CiAgPGcgZmlsbD0ncmdiYSgyNTUsMTYwLDE5MCwwLjI1KScgc3Ryb2tlPSdyZ2JhKDI1NSwxNDAsMTcwLDAuMzUpJyBzdHJva2Utd2lkdGg9JzInPgogICAgPHBhdGggZD0nTTIwLDgwIFEzMCw1MCA0NSw0MCBMNjAsMjUgTDc1LDQwIFE5MCw1MCAxMDAsODAgUTgwLDkwIDYwLDk1IFE0MCw5MCAyMCw4MCBaJy8+CiAgICA8Y2lyY2xlIGN4PSc2MCcgY3k9JzcwJyByPSc2JyBmaWxsPSdyZ2JhKDkwLDcwLDgwLDAuMzUpJy8+CiAgPC9nPgo8L3N2Zz4=");
-    background-size: 160px 160px, 220px 220px;
-    background-repeat: repeat, no-repeat;
-    background-position: top left, right 8% top 12%;
-    pointer-events:none;
-  }
+  html, body { margin:0; height:calc(var(--vh) * 100); background:#ffd6e6; color:#5a4750; font-family:-apple-system, system-ui, Segoe UI, Roboto, Helvetica, Arial; }
+  body::before{ content:''; position:fixed; inset:0; z-index:-2; background:linear-gradient(180deg,#ffd6e6 0%,#ffe9f1 100%); }
+  body::after{ content:''; position:fixed; inset:0; z-index:-1; opacity:.20; background-image:url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScxMjAnIGhlaWdodD0nMTIwJyB2aWV3Qm94PScwIDAgMTIwIDEyMCc+CiAgPGcgZmlsbD0nbm9uZScgc3Ryb2tlPSdyZ2JhKDI1NSwxMjAsMTYwLDAuMjUpJyBzdHJva2Utd2lkdGg9JzMnPgogICAgPHBhdGggZD0nTTIwLDYwIFE0MCwyMCA2MCw0MCBRODAsMjAgMTAwLDYwIFE4MCwxMDAgNjAsODAgUTQwLDEwMCAyMCw2MCBaJy8+CiAgICA8Y2lyY2xlIGN4PSc2MCcgY3k9JzYwJyByPSc2JyBmaWxsPSdyZ2JhKDI1NSwxMjAsMTYwLDAuMjUpJy8+CiAgPC9nPgo8L3N2Zz4="); background-size:160px 160px; background-repeat:repeat; pointer-events:none; }
 
-  #wrap { display:flex; flex-direction:column; min-height:100dvh; padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
-  /* Top game area */
-  #gameArea { height: calc(100dvh - var(--padH) - env(safe-area-inset-top)); display:flex; align-items:center; justify-content:center; padding:10px; }
-  #stage { position:relative; width:min(96vw, 900px); height:100%; display:flex; align-items:center; justify-content:center; }
-  canvas { background:#fff5faCC; backdrop-filter: blur(2px); border-radius:16px; box-shadow:0 8px 28px rgba(255,105,180,.25); }
+  #wrap{ display:flex; flex-direction:column; min-height:calc(var(--vh)*100); padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
+  #gameArea{ height: calc(var(--vh) * (100 - var(--controlsH)) - env(safe-area-inset-top)); display:flex; align-items:center; justify-content:center; padding:10px; }
+  #stage{ position:relative; width:min(96vw, 900px); height:100%; display:flex; align-items:center; justify-content:center; }
+  canvas{ background:#fff5faCC; backdrop-filter: blur(2px); border-radius:16px; box-shadow:0 8px 28px rgba(255,105,180,.25); }
   #hud{ position:absolute; top:10px; left:12px; display:flex; gap:10px; font-size:14px; color:#614d55; }
   #msg{ position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:#ffffffcc; color:#c0396e; padding:10px 14px; border-radius:12px; display:none; box-shadow:0 6px 18px rgba(0,0,0,.08); }
   #win{ position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:#fff0f7; color:#c0396e; padding:12px 16px; border-radius:14px; display:none; box-shadow:0 8px 28px rgba(255,105,180,.25); }
 
-  /* Bottom controls area — fixed 25dvh */
-  #controls { height: var(--padH); position:relative; }
-  #controlsInner { position:absolute; inset:0; display:grid; grid-template-columns: 1fr 1fr; }
-  #dpadWrap { display:flex; align-items:center; justify-content:center; }
-  #dpad { display:grid; gap: var(--gap); grid-template-areas: ". up ." "left . right" ". down ."; }
-  .btn { width:86px; height:86px; border-radius:18px; border:1px solid #ffc1d6; background:#ffe3ee; color:#b14a76; font-size:22px; box-shadow:0 4px 12px rgba(255,105,180,.18); }
-  .btn:active { transform:scale(.97); }
+  #controls{ height: calc(var(--vh) * var(--controlsH) + env(safe-area-inset-bottom)); position:relative; }
+  #controlsInner{ position:absolute; inset:0; display:grid; grid-template-columns: 1fr 1fr; }
+  #dpadWrap{ display:flex; align-items:center; justify-content:center; }
+  #dpad{ display:grid; gap: var(--gap); grid-template-areas: ". up ." "left . right" ". down ."; }
+  .btn{ width:86px; height:86px; border-radius:18px; border:1px solid #ffc1d6; background:#ffe3ee; color:#b14a76; font-size:22px; box-shadow:0 4px 12px rgba(255,105,180,.18); }
+  .btn:active{ transform:scale(.97); }
   @media (max-width:380px){ .btn{ width:68px; height:68px; } }
-  #actionsWrap { display:flex; align-items:flex-end; justify-content:flex-end; padding:14px; gap:12px; }
+  #actionsWrap{ display:flex; align-items:flex-end; justify-content:flex-end; padding:14px; gap:12px; }
   #pause,#restart{ width:64px; height:64px; border-radius:16px; background:#ffd1e2; border:1px solid #ffb7cf; font-size:20px; color:#a33e6a; }
 
-  /* settings */
+  /* settings / debug */
   #settings{ position:absolute; top:10px; right:10px; display:flex; gap:8px; }
   .chip{ padding:6px 10px; border-radius:14px; background:#ffcee0; border:1px solid #ffb7cf; color:#a33e6a; font-size:12px; }
-  #musicPanel{ position:absolute; top:44px; right:10px; background:#fff7fb; border:1px solid #ffd1e2; border-radius:12px; padding:10px; box-shadow:0 8px 24px rgba(0,0,0,.08); display:none; }
-  #musicPanel input{ width:240px; max-width:56vw; margin-top:6px; padding:6px 8px; border-radius:8px; border:1px solid #ffc9dc; }
+  #panel{ position:absolute; top:44px; right:10px; background:#fff7fb; border:1px solid #ffd1e2; border-radius:12px; padding:10px; box-shadow:0 8px 24px rgba(0,0,0,.08); display:none; }
+  #panel label{ font-size:12px; display:block; margin:6px 0 2px; }
+  #panel input[type=range]{ width:240px; max-width:56vw; }
+  #debug{ position:absolute; left:10px; bottom:10px; font-size:12px; color:#8a6a75; opacity:.8; }
 </style>
 </head>
 <body>
@@ -65,18 +55,21 @@
       <div id="win">💖 恭喜通关！小悠把你抱下线啦～</div>
 
       <div id="settings">
+        <button class="chip" id="menu">设置</button>
         <button class="chip" id="sfx">音效: 开</button>
         <button class="chip" id="bgm">音乐: 开</button>
-        <button class="chip" id="musicBtn">音乐源</button>
-        <div id="musicPanel">
-          <div style="font-size:12px; margin-bottom:6px;">粘贴 MP3 链接（可选）：</div>
-          <input id="musicURL" placeholder="https://.../happy.mp3"/>
-          <div style="display:flex; gap:6px; margin-top:8px;">
-            <button class="chip" id="applyMusic">应用</button>
-            <button class="chip" id="closeMusic">关闭</button>
-          </div>
+      </div>
+      <div id="panel">
+        <label>按键区高度（% 屏幕）：<span id="ctlVal">25</span>%</label>
+        <input id="ctlRange" type="range" min="18" max="35" step="1" value="25"/>
+        <label>蛇速起始值：</label>
+        <input id="spdRange" type="range" min="5" max="10" step="0.5" value="7"/>
+        <div style="margin-top:8px; display:flex; gap:6px;">
+          <button class="chip" id="apply">应用</button>
+          <button class="chip" id="close">关闭</button>
         </div>
       </div>
+      <div id="debug"></div>
     </div>
   </div>
 
@@ -99,7 +92,23 @@
 </div>
 
 <script>
+// SW
 if ('serviceWorker' in navigator) { window.addEventListener('load', ()=>navigator.serviceWorker.register('service-worker.js')); }
+
+// Fix --vh based on visualViewport for iOS 16/17/18
+(function(){
+  function setVH(){
+    const vh = (window.visualViewport ? window.visualViewport.height : window.innerHeight) / 100;
+    document.documentElement.style.setProperty('--vh', vh + 'px');
+    const dbg = document.getElementById('debug');
+    if(dbg){
+      dbg.textContent = 'vw:'+Math.round(window.innerWidth)+' vh:'+Math.round((window.visualViewport?window.visualViewport.height:window.innerHeight))+' dpr:'+window.devicePixelRatio;
+    }
+  }
+  setVH();
+  window.addEventListener('resize', setVH);
+  if(window.visualViewport){ window.visualViewport.addEventListener('resize', setVH); }
+})();
 </script>
 <script>
 (function(){ 'use strict';
@@ -108,42 +117,46 @@ if ('serviceWorker' in navigator) { window.addEventListener('load', ()=>navigato
   const scoreEl=document.getElementById('score'), speedEl=document.getElementById('speed');
   const msg=document.getElementById('msg'), winEl=document.getElementById('win');
 
+  // DPR crisp canvas
+  function setupCanvas(){
+    const dpr = window.devicePixelRatio || 1;
+    const cssW = cv.clientWidth;
+    const cssH = cv.clientHeight;
+    cv.width = Math.floor(cssW * dpr);
+    cv.height= Math.floor(cssH * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
   function fit(){
     const stage=document.getElementById('stage');
     const gw=stage.clientWidth, gh=stage.clientHeight;
     const scale=Math.min(gw/(W*TILE), gh/(H*TILE));
     cv.style.width=(W*TILE*scale)+'px';
     cv.style.height=(H*TILE*scale)+'px';
+    setupCanvas();
   }
   new ResizeObserver(fit).observe(document.getElementById('stage')); fit();
 
   const COL={ grid:'#ffffff33', apple:'#ff6b88', mail:'#ff5fa3', body:'#ff9fbc', head:'#ff6fa5', eye:'#4c2d3a' };
 
   // --- Audio ---
-  const AC=window.AudioContext||window.webkitAudioContext; let ac, master, sfxOn=true, bgmOn=true; let bgmTimer=null, userAudio=null;
+  const AC=window.AudioContext||window.webkitAudioContext; let ac, master, sfxOn=true, bgmOn=true; let bgmTimer=null;
   function ensureAudio(){ if(!ac){ ac=new AC(); master=ac.createGain(); master.gain.value=0.6; master.connect(ac.destination);} }
   function beep(f=660,d=0.06,t='triangle',g=0.18){ if(!sfxOn||!ac) return; const o=ac.createOscillator(), gNode=ac.createGain(); o.type=t; o.frequency.value=f; gNode.gain.value=g; o.connect(gNode); gNode.connect(master); const t0=ac.currentTime; o.start(t0); gNode.gain.exponentialRampToValueAtTime(0.001,t0+d); o.stop(t0+d); }
   function startDefaultBGM(){
     if(!bgmOn||!ac||bgmTimer) return;
     let t=ac.currentTime+0.05;
     function bar(){
-      const seq=[261.63,329.63,392.00,523.25]; // C E G C
+      const seq=[261.63,329.63,392.00,523.25];
       for(let i=0;i<seq.length;i++){ const o=ac.createOscillator(); o.type='triangle'; o.frequency.value=seq[i]; const g=ac.createGain(); g.gain.value=0.05; o.connect(g); g.connect(master); o.start(t+i*0.22); g.gain.exponentialRampToValueAtTime(0.0001, t+i*0.22+0.20); o.stop(t+i*0.22+0.22); }
       t+=0.9;
-      if(bgmOn && !userAudio){ bgmTimer=setTimeout(bar, 850); }
+      if(bgmOn){ bgmTimer=setTimeout(bar, 850); }
     }
     bar();
   }
-  function stopBGM(){ if(bgmTimer){ clearTimeout(bgmTimer); bgmTimer=null; } if(userAudio){ try{userAudio.pause();}catch(e){} } }
-  function applyUserMusic(url){
-    try{
-      stopBGM();
-      userAudio=new Audio(url); userAudio.loop=true; userAudio.volume=0.35;
-      userAudio.play().catch(()=>{});
-    }catch(e){ console.log('music error',e); }
-  }
+  function stopBGM(){ if(bgmTimer){ clearTimeout(bgmTimer); bgmTimer=null; } }
 
-  // --- Game (slower base speed) ---
+  // --- Game with adjustable speed ---
   let snake=[[Math.floor(W/2), Math.floor(H/2)]], dir=[1,0], queue=[], len=4;
   let speed=7, score=0, paused=false, over=false, win=false;
   let apple=rndEmpty(new Set(snake.map(JSON.stringify)));
@@ -153,7 +166,7 @@ if ('serviceWorker' in navigator) { window.addEventListener('load', ()=>navigato
   function setDir(nx,ny){ if(nx===-dir[0] && ny===-dir[1]) return; queue.push([nx,ny]); if(sfxOn) beep(240,0.05,'square',0.06); }
 
   const V=(ms)=>{ try{ if('vibrate' in navigator) navigator.vibrate(ms);}catch(e){} };
-  ['touchstart','mousedown'].forEach(ev=>window.addEventListener(ev,()=>{ ensureAudio(); if(bgmOn && !userAudio){ startDefaultBGM(); }},{once:true}));
+  ['touchstart','mousedown'].forEach(ev=>window.addEventListener(ev,()=>{ ensureAudio(); if(bgmOn){ startDefaultBGM(); }},{once:true}));
 
   document.getElementById('pause').onclick=()=>{ ensureAudio(); paused=!paused; V(8); };
   document.getElementById('restart').onclick=()=>{ ensureAudio(); reset(); V(15); };
@@ -162,28 +175,28 @@ if ('serviceWorker' in navigator) { window.addEventListener('load', ()=>navigato
   document.getElementById('left').onclick=()=>{ ensureAudio(); setDir(-1,0); V(10); };
   document.getElementById('right').onclick=()=>{ ensureAudio(); setDir(1, 0); V(10); };
 
-  // Music controls
-  const sfxBtn=document.getElementById('sfx'), bgmBtn=document.getElementById('bgm');
-  const musicBtn=document.getElementById('musicBtn'), panel=document.getElementById('musicPanel');
-  const musicURL=document.getElementById('musicURL'), applyBtn=document.getElementById('applyMusic'), closeBtn=document.getElementById('closeMusic');
-  sfxBtn.onclick=()=>{ sfxOn=!sfxOn; sfxBtn.textContent='音效: '+(sfxOn?'开':'关'); };
-  bgmBtn.onclick=()=>{ bgmOn=!bgmOn; bgmBtn.textContent='音乐: '+(bgmOn?'开':'关'); if(!bgmOn){ stopBGM(); } else { ensureAudio(); if(userAudio){ userAudio.play().catch(()=>{}); } else { startDefaultBGM(); } } };
-  musicBtn.onclick=()=>{ panel.style.display= panel.style.display==='none'||!panel.style.display ? 'block':'none'; };
-  applyBtn.onclick=()=>{ const url=musicURL.value.trim(); if(url){ ensureAudio(); applyUserMusic(url); panel.style.display='none'; } };
-  closeBtn.onclick=()=>{ panel.style.display='none'; };
-
-  // swipe on stage
-  const stage=document.getElementById('stage'); let sx=0,sy=0,moved=false;
-  stage.addEventListener('touchstart',e=>{ const t=e.touches[0]; sx=t.clientX; sy=t.clientY; moved=false; },{passive:true});
-  stage.addEventListener('touchmove',e=>{ moved=true; },{passive:true});
-  stage.addEventListener('touchend',e=>{ if(!moved) return; ensureAudio(); const t=e.changedTouches[0]; const dx=t.clientX-sx, dy=t.clientY-sy; if(Math.abs(dx)>Math.abs(dy)) setDir(dx>0?1:-1,0); else setDir(0,dy>0?1:-1); },{passive:true});
+  // Settings panel
+  const menu=document.getElementById('menu'), panel=document.getElementById('panel');
+  const ctlRange=document.getElementById('ctlRange'), ctlVal=document.getElementById('ctlVal');
+  const spdRange=document.getElementById('spdRange');
+  document.getElementById('sfx').onclick=()=>{ sfxOn=!sfxOn; document.getElementById('sfx').textContent='音效: '+(sfxOn?'开':'关'); };
+  document.getElementById('bgm').onclick=()=>{ bgmOn=!bgmOn; document.getElementById('bgm').textContent='音乐: '+(bgmOn?'开':'关'); if(!bgmOn){ stopBGM(); } else { ensureAudio(); startDefaultBGM(); } };
+  menu.onclick=()=>{ panel.style.display = (panel.style.display==='block') ? 'none' : 'block'; };
+  ctlRange.oninput=()=>{ ctlVal.textContent=ctlRange.value; };
+  document.getElementById('apply').onclick=()=>{
+    document.documentElement.style.setProperty('--controlsH', ctlRange.value);
+    speed = parseFloat(spdRange.value);
+    speedEl.textContent = '速度: '+speed.toFixed(1);
+    panel.style.display='none';
+    fit();
+  };
+  document.getElementById('close').onclick=()=>{ panel.style.display='none'; };
 
   function reset(){
     snake=[[Math.floor(W/2), Math.floor(H/2)]]; dir=[1,0]; queue=[]; len=4;
-    speed=7; score=0; paused=false; over=false; win=false;
+    score=0; paused=false; over=false; win=false;
     apple=rndEmpty(new Set(snake.map(JSON.stringify))); mail=null; mailTTL=0;
     msg.style.display='none'; winEl.style.display='none';
-    speedEl.textContent='速度: '+speed.toFixed(1);
   }
 
   function tick(){
