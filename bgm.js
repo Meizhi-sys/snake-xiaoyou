@@ -53,7 +53,7 @@
   function cacheBGM() {
     if (!('caches' in window)) return;
     fetch(URL_FRIENDSHIP, { mode: 'no-cors' })
-      .then(resp => caches.open('snake-pwa-v6-11').then(c => c.put(URL_FRIENDSHIP, resp)))
+      .then(resp => caches.open('snake-pwa-v6-13').then(c => c.put(URL_FRIENDSHIP, resp)))
       .catch(()=>{});
   }
 

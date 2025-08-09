@@ -3,62 +3,42 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
-<title>粉粉贪吃蛇·小悠特别版 (PWA v6.11)</title>
+<title>粉粉贪吃蛇·小悠特别版 (PWA v6.13)</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#ffd6e6">
 <link rel="apple-touch-icon" href="icon-512.png">
 <style>
-  :root{
-    --vh: 1vh;
-    --controlsH: 45;
-    --controlsLift: 44;
-    --actionsPadRight: 30;
-    --gap: 12px;
-    --gutterX: 8px;
-  }
-  html, body { margin:0; height:calc(var(--vh) * 100); overflow:hidden; background:#ffd6e6; color:#5a4750; font-family:-apple-system, system-ui, Segoe UI, Roboto, Helvetica, Arial;
-               overscroll-behavior:none; touch-action:none; }
-  *, *::before, *::after { box-sizing: border-box; }
-  body::before{ content:''; position:fixed; inset:0; z-index:-2; background:linear-gradient(180deg,#ffd6e6 0%,#ffe9f1 100%); }
-  body::after{ content:''; position:fixed; inset:0; z-index:-1; opacity:.14; background-image:url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScxMjAnIGhlaWdodD0nMTIwJyB2aWV3Qm94PScwIDAgMTIwIDEyMCc+CiAgPGcgZmlsbD0nbm9uZScgc3Ryb2tlPSdyZ2JhKDI1NSwxMjAsMTYwLDAuMTYpJyBzdHJva2Utd2lkdGg9JzMnPgogICAgPHBhdGggZD0nTTIwLDYwIFE0MCwyMCA2MCw0MCBRODAsMjAgMTAwLDYwIFE4MCwxMDAgNjAsODAgUTQwLDEwMCAyMCw2MCBaJy8+CiAgICA8Y2lyY2xlIGN4PSc2MCcgY3k9JzYwJyByPSc2JyBmaWxsPSdyZ2JhKDI1NSwxMjAsMTYwLDAuMTYpJy8+CiAgPC9nPgo8L3N2Zz4="); background-size:160px 160px; background-repeat:repeat; pointer-events:none; }
+  :root{ --vh:1vh; --controlsH:45; --controlsLift:44; --actionsPadRight:30; --gap:12px; --gutterX:8px; }
+  html,body{ margin:0; height:calc(var(--vh)*100); overflow:hidden; background:#ffd6e6; color:#5a4750; font-family:-apple-system,system-ui,Segoe UI,Roboto,Helvetica,Arial; overscroll-behavior:none; touch-action:none;}
+  *,*:before,*:after{ box-sizing:border-box;}
+  body::before{content:'';position:fixed;inset:0;z-index:-2;background:linear-gradient(180deg,#ffd6e6 0%,#ffe9f1 100%);}
+  body::after{content:'';position:fixed;inset:0;z-index:-1;opacity:.14;background-image:url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScxMjAnIGhlaWdodD0nMTIwJyB2aWV3Qm94PScwIDAgMTIwIDEyMCc+CiAgPGcgZmlsbD0nbm9uZScgc3Ryb2tlPSdyZ2JhKDI1NSwxMjAsMTYwLDAuMTYpJyBzdHJva2Utd2lkdGg9JzMnPgogICAgPHBhdGggZD0nTTIwLDYwIFE0MCwyMCA2MCw0MCBRODAsMjAgMTAwLDYwIFE4MCwxMDAgNjAsODAgUTQwLDEwMCAyMCw2MCBaJy8+CiAgICA8Y2lyY2xlIGN4PSc2MCcgY3k9JzYwJyByPSc2JyBmaWxsPSdyZ2JhKDI1NSwxMjAsMTYwLDAuMTYpJy8+CiAgPC9nPgo8L3N2Zz4=");background-size:160px 160px;background-repeat:repeat;pointer-events:none;}
   #wrap{ position:fixed; inset:0; display:flex; flex-direction:column; min-height:calc(var(--vh)*100); padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
-
-  #gameArea{ height: calc(var(--vh) * (100 - var(--controlsH)) - env(safe-area-inset-top));
-             display:flex; align-items:center; justify-content:center; padding:2px var(--gutterX); min-height:80px; width:100vw; }
-  #stage{ position:relative;
-          width: calc(100vw - env(safe-area-inset-left) - env(safe-area-inset-right) - var(--gutterX)*2);
-          max-width: calc(100vw - env(safe-area-inset-left) - env(safe-area-inset-right) - var(--gutterX)*2);
-          height:100%;
-          overflow:hidden;
-          display:flex; align-items:center; justify-content:center; }
-  canvas{ max-width:100%; display:block; background:#fff5faCC; backdrop-filter: blur(2px); border-radius:16px; box-shadow:0 8px 28px rgba(255,105,180,.25); touch-action:none; }
-  #hud{ position:absolute; top:6px; right:8px; display:flex; gap:10px; font-size:14px; color:#614d55; z-index:5;}
+  #gameArea{ height: calc(var(--vh)*(100 - var(--controlsH)) - env(safe-area-inset-top)); display:flex; align-items:center; justify-content:center; padding:2px var(--gutterX); min-height:80px; width:100vw;}
+  #stage{ position:relative; width: calc(100vw - env(safe-area-inset-left) - env(safe-area-inset-right) - var(--gutterX)*2); max-width: calc(100vw - env(safe-area-inset-left) - env(safe-area-inset-right) - var(--gutterX)*2); height:100%; overflow:hidden; display:flex; align-items:center; justify-content:center;}
+  canvas{ max-width:100%; display:block; background:#fff5faCC; backdrop-filter: blur(2px); border-radius:16px; box-shadow:0 8px 28px rgba(255,105,180,.25); touch-action:none;}
+  #hudLeft{ position:absolute; top:6px; left:8px; display:flex; gap:10px; font-size:14px; color:#614d55; z-index:5;}
+  #hudRight{ position:absolute; top:6px; right:8px; display:flex; gap:10px; font-size:14px; color:#614d55; z-index:5;}
   #msg{ position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:#ffffffcc; color:#c0396e; padding:10px 14px; border-radius:12px; display:none; box-shadow:0 6px 18px rgba(0,0,0,.08); }
+  #banner{ position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:#ffecf6; color:#c0396e; padding:12px 18px; border-radius:14px; display:none; box-shadow:0 10px 30px rgba(255,105,180,.28); font-weight:600; }
   #win{ position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:#fff0f7; color:#c0396e; padding:12px 16px; border-radius:14px; display:none; box-shadow:0 8px 28px rgba(255,105,180,.25); }
-
-  #controls{ height: calc(var(--vh) * var(--controlsH)); position:relative; }
-  #controlsInner{ position:absolute; left:0; right:0; top:0; bottom:0; display:grid; grid-template-columns: 1fr 1fr;
-                  padding-bottom: calc(env(safe-area-inset-bottom) + 2px);
-                  transform: translateY(calc(var(--controlsLift) * -1px)); }
-  #dpadWrap{ display:flex; align-items:center; justify-content:center; }
+  #controls{ height: calc(var(--vh) * var(--controlsH)); position:relative;}
+  #controlsInner{ position:absolute; left:0; right:0; top:0; bottom:0; display:grid; grid-template-columns:1fr 1fr; padding-bottom:calc(env(safe-area-inset-bottom)+2px); transform:translateY(calc(var(--controlsLift)*-1px));}
+  #dpadWrap{ display:flex; align-items:center; justify-content:center;}
   #dpad{ display:grid; gap: var(--gap); grid-template-areas: ". up ." "left . right" ". down ."; }
   .btn{ width:86px; height:86px; border-radius:20px; border:1px solid #ffc1d6; background:#ffe3ee; color:#b14a76; font-size:22px; box-shadow:0 4px 12px rgba(255,105,180,.18); }
   .btn:active{ transform:scale(.97); }
   @media (max-width:380px){ .btn{ width:68px; height:68px; } }
-
-  #actionsWrap{ position:absolute; right: calc(env(safe-area-inset-right) + var(--actionsPadRight)*1px); bottom: 8px;
-                display:flex; align-items:flex-end; justify-content:flex-end; gap:10px; pointer-events:auto; }
+  #actionsWrap{ position:absolute; right: calc(env(safe-area-inset-right) + var(--actionsPadRight)*1px); bottom: 8px; display:flex; align-items:flex-end; justify-content:flex-end; gap:10px; pointer-events:auto; }
   #pause,#restart{ width:64px; height:64px; border-radius:18px; border:none; background:linear-gradient(180deg,#ffcfe1,#ffb7d1); color:#fff; box-shadow:0 6px 16px rgba(255,105,180,.28); display:flex; align-items:center; justify-content:center; }
   #pause svg, #restart svg{ width:28px; height:28px; opacity:.95; }
-
-  #settings{ position:absolute; top:6px; right:8px; display:flex; gap:8px; transform: translateX(12px); } /* 往右挪一点，避免挡住速度 */
+  #settings{ position:absolute; top:6px; right:8px; display:flex; gap:8px; transform: translateX(12px); }
   .chip{ padding:6px 10px; border-radius:14px; background:#ffcee0; border:1px solid #ffb7cf; color:#a33e6a; font-size:12px; }
-  #panel{ position:absolute; top:40px; right:6px; background:#fff7fb; border:1px solid #ffd1e2; border-radius:12px; padding:10px; box-shadow:0 8px 24px rgba(0,0,0,.08); display:none; min-width:280px; z-index:6; }
+  #panel{ position:absolute; top:40px; right:6px; background:#fff7fb; border:1px solid #ffd1e2; border-radius:12px; padding:10px; box-shadow:0 8px 24px rgba(0,0,0,.08); display:none; min-width:320px; z-index:6; }
   #panel label{ font-size:12px; display:block; margin:6px 0 2px; }
   #panel input[type=range]{ width:260px; max-width:64vw; }
-  #panel select{ width:260px; max-width:64vw; padding:6px 8px; border-radius:8px; border:1px solid #ffc9dc; background:#fff; }
-
-  #toast{ position:fixed; left:50%; bottom: calc(env(safe-area-inset-bottom) + 64px); transform:translateX(-50%); background:#000000a0; color:#fff; padding:8px 12px; border-radius:10px; font-size:12px; display:none; z-index:9999; }
+  #panel select, #panel input[type=number]{ width:260px; max-width:64vw; padding:6px 8px; border-radius:8px; border:1px solid #ffc9dc; background:#fff; }
+  #panel .row{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
 </style>
 </head>
 <body>
@@ -66,8 +46,10 @@
   <div id="gameArea">
     <div id="stage">
       <canvas id="cv" width="660" height="484" aria-label="游戏画面"></canvas>
-      <div id="hud"><span id="score">分数: 0</span><span id="speed">速度: 7</span></div>
+      <div id="hudLeft"><span id="score">分数: 0</span></div>
+      <div id="hudRight"><span id="level">关卡: 1</span><span id="speed">速度: 7</span></div>
       <div id="msg" role="alert"></div>
+      <div id="banner">➡️ 下一关！</div>
       <div id="win">💖 恭喜通关！小悠把你抱下线啦～</div>
 
       <div id="settings">
@@ -82,23 +64,47 @@
         <input id="liftRange" type="range" min="0" max="120" step="2" value="44"/>
         <label>右下角按钮向内偏移（px，0–220）：<span id="padVal">30</span></label>
         <input id="padRange" type="range" min="0" max="220" step="2" value="30"/>
-        <label>撞墙规则：</label>
-        <select id="wallMode">
-          <option value="wrap" selected>穿越（不死亡）</option>
-          <option value="die">死亡</option>
-        </select>
-        <label>食物样式：</label>
-        <select id="foodStyle">
-          <option value="pixel" selected>像素点</option>
-          <option value="candy">糖果</option>
-        </select>
-        <label>吃到食物是否加速：</label>
-        <select id="speedUp">
-          <option value="off" selected>关（保持初始速度）</option>
-          <option value="on">开（每个+0.25）</option>
-        </select>
+        <div class="row">
+          <label style="min-width:110px;">棋盘颗粒：</label>
+          <select id="boardPreset">
+            <option value="30x22">标准 (30×22)</option>
+            <option value="26x18" selected>大号 (26×18)</option>
+            <option value="22x16">超大 (22×16)</option>
+          </select>
+        </div>
+        <div class="row">
+          <label style="min-width:110px;">撞墙规则：</label>
+          <select id="wallMode">
+            <option value="wrap" selected>穿越（不死亡）</option>
+            <option value="die">死亡</option>
+          </select>
+        </div>
+        <div class="row">
+          <label style="min-width:110px;">食物样式：</label>
+          <select id="foodStyle">
+            <option value="pixel" selected>像素点</option>
+            <option value="candy">糖果</option>
+          </select>
+        </div>
+        <div class="row">
+          <label style="min-width:110px;">吃到是否加速：</label>
+          <select id="speedUp">
+            <option value="off" selected>关（保持初始）</option>
+            <option value="on">开（每个+0.25）</option>
+          </select>
+        </div>
         <label>蛇速起始值：</label>
         <input id="spdRange" type="range" min="5" max="10" step="0.5" value="7"/>
+        <hr style="border:none;border-top:1px solid #ffd4e4;margin:8px 0;">
+        <div class="row">
+          <label style="min-width:110px;">关卡模式：</label>
+          <select id="levelMode">
+            <option value="on" selected>开（每 +100 分升一关）</option>
+            <option value="off">关（无尽）</option>
+          </select>
+        </div>
+        <label>每关目标分（20–200）：<span id="tsVal">100</span></label>
+        <input id="tsRange" type="range" min="20" max="200" step="10" value="100"/>
         <div style="margin-top:8px; display:flex; gap:6px; flex-wrap:wrap;">
           <button class="chip" id="apply">应用并保存</button>
           <button class="chip" id="close">关闭</button>
@@ -135,105 +141,52 @@
 <script src="./bgm.js"></script>
 <script>
 if ('serviceWorker' in navigator) { window.addEventListener('load', ()=>navigator.serviceWorker.register('service-worker.js')); }
-(function(){
-  function setVH(){
-    const vv = window.visualViewport;
-    const h = (vv ? vv.height : window.innerHeight);
-    document.documentElement.style.setProperty('--vh', (h/100) + 'px');
-  }
-  setVH();
-  window.addEventListener('resize', setVH);
-  if(window.visualViewport){ window.visualViewport.addEventListener('resize', setVH); }
-})();
+(function(){function setVH(){const vv=window.visualViewport;const h=(vv?vv.height:window.innerHeight);document.documentElement.style.setProperty('--vh',(h/100)+'px');}setVH();window.addEventListener('resize',setVH);if(window.visualViewport){window.visualViewport.addEventListener('resize',setVH);}})();
 </script>
 <script>
 (function(){ 'use strict';
-  const W=30, H=22;  // 逻辑网格固定不变
-  let TILEPX=22;     // 由 fit() 动态计算
+  const presets={'30x22':[30,22],'26x18':[26,18],'22x16':[22,16]};
+  let presetKey='26x18'; let W=26,H=18; let TILEPX=22;
 
   const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+  const levelEl=document.getElementById('level');
   const scoreEl=document.getElementById('score'), speedEl=document.getElementById('speed');
-  const msg=document.getElementById('msg'), winEl=document.getElementById('win');
+  const msg=document.getElementById('msg'), winEl=document.getElementById('win'); const banner=document.getElementById('banner');
 
-  const savedRaw = localStorage.getItem('xy_snake_settings');
-  const saved = savedRaw ? JSON.parse(savedRaw) : null;
-  function setVar(name, val){ document.documentElement.style.setProperty(name, val); }
-  if(saved && saved.controlsH!=null) setVar('--controlsH', saved.controlsH);
-  if(saved && saved.controlsLift!=null) setVar('--controlsLift', saved.controlsLift);
-  if(saved && saved.actionsPadRight!=null) setVar('--actionsPadRight', saved.actionsPadRight);
-  let startSpeed = (saved && saved.startSpeed!=null) ? parseFloat(saved.startSpeed) : 7;
-  let sfxOn = !(saved && saved.sfxOn===false);
-  let bgmOn = !(saved && saved.bgmOn===false);
-  let wallMode=(saved && saved.wallMode) ? saved.wallMode : 'wrap';
-  let foodStyle=(saved && saved.foodStyle) ? saved.foodStyle : 'pixel';
-  let speedUp=(saved && saved.speedUp) ? saved.speedUp : 'off';
+  const savedRaw=localStorage.getItem('xy_snake_settings'); const saved=savedRaw?JSON.parse(savedRaw):null;
+  function setVar(n,v){document.documentElement.style.setProperty(n,v);}
+  if(saved&&saved.controlsH!=null)setVar('--controlsH',saved.controlsH);
+  if(saved&&saved.controlsLift!=null)setVar('--controlsLift',saved.controlsLift);
+  if(saved&&saved.actionsPadRight!=null)setVar('--actionsPadRight',saved.actionsPadRight);
+  let startSpeed=(saved&&saved.startSpeed!=null)?parseFloat(saved.startSpeed):7;
+  let sfxOn=!(saved&&saved.sfxOn===false);
+  let bgmOn=!(saved&&saved.bgmOn===false);
+  let wallMode=(saved&&saved.wallMode)?saved.wallMode:'wrap';
+  let foodStyle=(saved&&saved.foodStyle)?saved.foodStyle:'pixel';
+  let speedUp=(saved&&saved.speedUp)?saved.speedUp:'off';
+  let levelMode=(saved&&saved.levelMode)?saved.levelMode:'on';
+  let targetScore=(saved&&saved.targetScore)?parseInt(saved.targetScore,10):100;
+  if(saved&&saved.boardPreset&&presets[saved.boardPreset]){presetKey=saved.boardPreset;[W,H]=presets[presetKey];}
 
-  function setupCanvas(){
-    const dpr = window.devicePixelRatio || 1;
-    const cssW = cv.clientWidth;
-    const cssH = cv.clientHeight;
-    cv.width = Math.floor(cssW * dpr);
-    cv.height= Math.floor(cssH * dpr);
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  }
-  function fit(){
-    const stage=document.getElementById('stage');
-    const rect = stage.getBoundingClientRect();
-    const gw = Math.max(0, Math.floor(rect.width));
-    const gh = Math.max(0, Math.floor(rect.height));
-    // 关键：把每格像素设成整数，确保 W*TILEPX <= gw 且 H*TILEPX <= gh
-    const candX = Math.max(10, Math.floor(gw / W));
-    const candY = Math.max(10, Math.floor(gh / H));
-    TILEPX = Math.max(12, Math.min(candX, candY)); // 不小于12，保证手指点击体验
-    const wpx = W * TILEPX;
-    const hpx = H * TILEPX;
-    cv.style.width=wpx+'px';
-    cv.style.height=hpx+'px';
-    setupCanvas();
-  }
+  function setupCanvas(){const dpr=window.devicePixelRatio||1;const cssW=cv.clientWidth;const cssH=cv.clientHeight;cv.width=Math.floor(cssW*dpr);cv.height=Math.floor(cssH*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);}
+  function fit(){const stage=document.getElementById('stage');const r=stage.getBoundingClientRect();const gw=Math.max(0,Math.floor(r.width));const gh=Math.max(0,Math.floor(r.height));const candX=Math.max(10,Math.floor(gw/W));const candY=Math.max(10,Math.floor(gh/H));TILEPX=Math.max(12,Math.min(candX,candY));const wpx=W*TILEPX;const hpx=H*TILEPX;cv.style.width=wpx+'px';cv.style.height=hpx+'px';setupCanvas();}
   new ResizeObserver(fit).observe(document.getElementById('stage')); fit();
 
-  const COL={ grid:'#ffffff33', apple:'#ff5fa3', body:'#ff9fbc', head:'#ff6fa5', eye:'#4c2d3a' };
+  const COL={grid:'#ffffff35', apple:'#ff5fa3', body:'#ff9fbc', head:'#ff6fa5', eye:'#4c2d3a'};
 
-  function playBGM(){ if(window.__xyPlayBGM && bgmOn) return window.__xyPlayBGM(); return Promise.resolve(); }
-  window.addEventListener('touchstart', ()=>playBGM(), {once:true});
-  window.addEventListener('mousedown', ()=>playBGM(), {once:true});
+  function playBGM(){ if(window.__xyPlayBGM&&bgmOn) return window.__xyPlayBGM(); return Promise.resolve(); }
+  window.addEventListener('touchstart',()=>playBGM(),{once:true}); window.addEventListener('mousedown',()=>playBGM(),{once:true});
 
   let snake=[], dir=[1,0], queue=[], len=4;
-  let speed=startSpeed, score=0, paused=false, over=false, win=false;
-  let apple=null, mail=null, mailTTL=0;
-  let lastAppleAt=0; // 2.5s watchdog
+  let speed=startSpeed, score=0, paused=false, over=false, win=false, level=1;
+  let apple=null, mail=null, mailTTL=0, lastAppleAt=0; // 5s watchdog
 
-  function spawnAppleAvoidingSnake(occ){
-    for(let t=0;t<2000;t++){
-      const c=[Math.floor(Math.random()*W), Math.floor(Math.random()*H)];
-      if(!occ.has(JSON.stringify(c))) return c;
-    }
-    for(let y=0;y<H;y++){ for(let x=0;x<W;x++){ const key=JSON.stringify([x,y]); if(!occ.has(key)) return [x,y]; } }
-    return null;
-  }
-  function placeAppleNew(avoidSame=true){
-    const occ=new Set(snake.map(JSON.stringify));
-    if(avoidSame && apple) occ.add(JSON.stringify(apple));
-    const pos = spawnAppleAvoidingSnake(occ);
-    if(pos){ apple = pos; lastAppleAt = performance.now(); }
-  }
-  function ensureApple(){
-    if(!apple){ placeAppleNew(false); }
-  }
-  function initState(){
-    const cx=Math.floor(W/2), cy=Math.floor(H/2);
-    snake=[[cx,cy]]; dir=[1,0]; queue=[]; len=4; score=0; paused=false; over=false; win=false;
-    speed = startSpeed;
-    apple=null; mail=null; mailTTL=0; lastAppleAt=0;
-    ensureApple();
-    speedEl.textContent='速度: '+speed.toFixed(1);
-  }
+  function spawnAppleAvoidingSnake(occ){for(let t=0;t<2000;t++){const c=[Math.floor(Math.random()*W),Math.floor(Math.random()*H)];if(!occ.has(JSON.stringify(c)))return c;}for(let y=0;y<H;y++){for(let x=0;x<W;x++){const key=JSON.stringify([x,y]);if(!occ.has(key))return [x,y];}}return null;}
+  function placeAppleNew(avoidSame=true){const occ=new Set(snake.map(JSON.stringify));if(avoidSame&&apple)occ.add(JSON.stringify(apple));const pos=spawnAppleAvoidingSnake(occ);if(pos){apple=pos;lastAppleAt=performance.now();}}
+  function ensureApple(){if(!apple){placeAppleNew(false);}}
+  function initState(){const cx=Math.floor(W/2),cy=Math.floor(H/2);snake=[[cx,cy]];dir=[1,0];queue=[];len=4;score=0;paused=false;over=false;win=false;level=1;speed=startSpeed;apple=null;mail=null;mailTTL=0;lastAppleAt=0;levelEl.textContent='关卡: '+level;ensureApple();speedEl.textContent='速度: '+speed.toFixed(1);scoreEl.textContent='分数: '+score;}
 
-  function setDir(nx,ny){
-    if(nx===-dir[0] && ny===-dir[1]) return;
-    queue.push([nx,ny]);
-  }
+  function setDir(nx,ny){ if(nx===-dir[0]&&ny===-dir[1])return; queue.push([nx,ny]); }
   const V=(ms)=>{ try{ if('vibrate' in navigator) navigator.vibrate(ms);}catch(e){} };
 
   document.getElementById('pause').onclick=()=>{ paused=!paused; V(8); };
@@ -252,40 +205,38 @@ if ('serviceWorker' in navigator) { window.addEventListener('load', ()=>navigato
   const wallSel=document.getElementById('wallMode');
   const foodSel=document.getElementById('foodStyle');
   const speedUpSel=document.getElementById('speedUp');
+  const levelModeSel=document.getElementById('levelMode');
+  const tsRange=document.getElementById('tsRange'), tsVal=document.getElementById('tsVal');
+  const boardPresetSel=document.getElementById('boardPreset');
 
-  if(saved && saved.controlsH!=null){ ctlRange.value = saved.controlsH; ctlVal.textContent = ctlRange.value; }
-  if(saved && saved.controlsLift!=null){ liftRange.value = saved.controlsLift; liftVal.textContent = liftRange.value; }
-  if(saved && saved.actionsPadRight!=null){ padRange.value = saved.actionsPadRight; padVal.textContent = padRange.value; }
-  if(saved && saved.wallMode){ wallSel.value=saved.wallMode; wallMode=saved.wallMode; }
-  if(saved && saved.foodStyle){ foodSel.value=saved.foodStyle; foodStyle=saved.foodStyle; }
-  if(saved && saved.speedUp){ speedUpSel.value=saved.speedUp; speedUp=saved.speedUp; }
+  if(saved&&saved.controlsH!=null){ctlRange.value=saved.controlsH;ctlVal.textContent=ctlRange.value;}
+  if(saved&&saved.controlsLift!=null){liftRange.value=saved.controlsLift;liftVal.textContent=liftRange.value;}
+  if(saved&&saved.actionsPadRight!=null){padRange.value=saved.actionsPadRight;padVal.textContent=padRange.value;}
+  if(saved&&saved.wallMode){wallSel.value=saved.wallMode;wallMode=saved.wallMode;}
+  if(saved&&saved.foodStyle){foodSel.value=saved.foodStyle;foodStyle=saved.foodStyle;}
+  if(saved&&saved.speedUp){speedUpSel.value=saved.speedUp;speedUp=saved.speedUp;}
+  if(saved&&saved.levelMode){levelModeSel.value=saved.levelMode;levelMode=saved.levelMode;}
+  if(saved&&saved.targetScore){tsRange.value=saved.targetScore;}
+  if(saved&&saved.boardPreset){boardPresetSel.value=saved.boardPreset;}
+  tsVal.textContent=tsRange.value;
 
-  spdRange.value = startSpeed;
-  sfxBtn.textContent = '音效: ' + (sfxOn ? '开':'关');
-  bgmBtn.textContent = '音乐: ' + (bgmOn ? '开':'关');
+  spdRange.value=startSpeed;
+  sfxBtn.textContent='音效: '+(sfxOn?'开':'关');
+  bgmBtn.textContent='音乐: '+(bgmOn?'开':'关');
 
   function applySettings(persist){
     document.documentElement.style.setProperty('--controlsH', ctlRange.value);
     document.documentElement.style.setProperty('--controlsLift', liftRange.value);
     document.documentElement.style.setProperty('--actionsPadRight', padRange.value);
-    startSpeed = parseFloat(spdRange.value);
-    wallMode = wallSel.value;
-    foodStyle = foodSel.value;
-    speedUp   = speedUpSel.value;
+    startSpeed=parseFloat(spdRange.value);
+    wallMode=wallSel.value; foodStyle=foodSel.value; speedUp=speedUpSel.value; levelMode=levelModeSel.value; targetScore=parseInt(tsRange.value,10);
+    const bp=boardPresetSel.value; let needReset=false;
+    if(bp!==presetKey){ presetKey=bp; [W,H]=presets[presetKey]; needReset=true; }
     if(persist){
-      const data = {
-        controlsH: ctlRange.value,
-        controlsLift: liftRange.value,
-        actionsPadRight: padRange.value,
-        startSpeed: startSpeed,
-        sfxOn: sfxOn, bgmOn: bgmOn,
-        wallMode: wallMode,
-        foodStyle: foodStyle,
-        speedUp: speedUp
-      };
+      const data={controlsH:ctlRange.value,controlsLift:liftRange.value,actionsPadRight:padRange.value,startSpeed:startSpeed,sfxOn:sfxOn,bgmOn:bgmOn,wallMode:wallMode,foodStyle:foodStyle,speedUp:speedUp,levelMode:levelMode,targetScore:targetScore,boardPreset:presetKey};
       localStorage.setItem('xy_snake_settings', JSON.stringify(data));
     }
-    fit();
+    fit(); if(needReset) initState();
   }
   ctlRange.oninput=()=>{ ctlVal.textContent=ctlRange.value; document.documentElement.style.setProperty('--controlsH', ctlRange.value); };
   liftRange.oninput=()=>{ liftVal.textContent=liftRange.value; document.documentElement.style.setProperty('--controlsLift', liftRange.value); };
@@ -293,6 +244,8 @@ if ('serviceWorker' in navigator) { window.addEventListener('load', ()=>navigato
   wallSel.onchange=()=>{ wallMode=wallSel.value; };
   foodSel.onchange=()=>{ foodStyle=foodSel.value; };
   speedUpSel.onchange=()=>{ speedUp=speedUpSel.value; };
+  levelModeSel.onchange=()=>{ levelMode=levelModeSel.value; };
+  tsRange.oninput=()=>{ tsVal.textContent=tsRange.value; };
 
   document.getElementById('apply').onclick=()=>{ applySettings(true); panel.style.display='none'; };
   document.getElementById('close').onclick=()=>{ panel.style.display='none'; };
@@ -303,6 +256,8 @@ if ('serviceWorker' in navigator) { window.addEventListener('load', ()=>navigato
     padRange.value=30; padVal.textContent='30';
     spdRange.value=7;
     wallSel.value='wrap'; foodSel.value='pixel'; speedUpSel.value='off';
+    levelModeSel.value='on'; tsRange.value=100; tsVal.textContent='100';
+    boardPresetSel.value='26x18'; presetKey='26x18'; [W,H]=presets[presetKey];
     sfxOn=true; bgmOn=true; sfxBtn.textContent='音效: 开'; bgmBtn.textContent='音乐: 开';
     applySettings(true);
   };
@@ -327,101 +282,57 @@ if ('serviceWorker' in navigator) { window.addEventListener('load', ()=>navigato
     }
   }
 
+  function showBanner(text){ banner.textContent=text||'➡️ 下一关！'; banner.style.display='block'; setTimeout(()=>{banner.style.display='none';},800); }
+  function maybeLevelUp(){
+    if(levelMode!=='on') return;
+    const need=targetScore*level;
+    if(score>=need){ level++; levelEl.textContent='关卡: '+level; showBanner('➡️ 第 '+level+' 关！'); if(speedUp==='off'){ const nb=startSpeed+(level-1)*0.5; speed=Math.min(14,nb); speedEl.textContent='速度: '+speed.toFixed(1); } }
+  }
+
   function tick(){
     if(!paused && !over && !win){
       while(queue.length){ const [nx,ny]=queue.shift(); if(!(nx===-dir[0] && ny===-dir[1])){ dir=[nx,ny]; break; } }
       const [hx,hy]=snake[0];
-      const step = stepHead([hx,hy], dir);
+      const step=stepHead([hx,hy],dir);
       if(!step){ over=true; }
       else{
-        const [nx,ny]=step;
-        const head=[nx,ny];
+        const [nx,ny]=step; const head=[nx,ny];
         for(let i=0;i<snake.length;i++){ if(snake[i][0]===head[0]&&snake[i][1]===head[1]){ over=true; break; } }
         if(!over){
           snake.unshift(head);
           if(snake.length>len) snake.pop();
-
           ensureApple();
-
-          // 2.5s watchdog：未吃到就换新位置
-          if(apple && performance.now() - lastAppleAt > 2500){
-            placeAppleNew(true);
-          }
-
+          if(apple && performance.now()-lastAppleAt>5000){ placeAppleNew(true); }
           if(apple && head[0]===apple[0] && head[1]===apple[1]){
             len++; score+=10;
             if(speedUp==='on'){ speed=Math.min(14, speed+0.25); }
             placeAppleNew(true);
-            if(!mail && Math.random()<0.06){
-              const occ=new Set(snake.map(JSON.stringify));
-              mail = spawnAppleAvoidingSnake(occ); mailTTL=500;
-            }
             speedEl.textContent='速度: '+speed.toFixed(1);
+            scoreEl.textContent='分数: '+score;
+            maybeLevelUp();
           }
-
-          if(mail && head[0]===mail[0] && head[1]===mail[1]){ win=true; }
         }
       }
     }
-    if(mail){ if(--mailTTL<=0){ mail=null; } }
     draw();
     setTimeout(tick, 1000/Math.max(5, speed));
   }
 
   function rr(x,y,w,h,r){ r=Math.min(r,w/2,h/2); ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
-  function cell(x,y,color,rad=8){
-    const t=TILEPX, px=x*t, py=y*t;
-    ctx.fillStyle=color; rr(px+1,py+1,t-2,t-2,Math.min(10,t/2)); ctx.fill();
-  }
-  function head(x,y){
-    const t=TILEPX, px=x*t, py=y*t;
-    ctx.fillStyle=COL.head; rr(px+1,py+1,t-2,t-2,Math.min(10,t/2)); ctx.fill();
-    ctx.fillStyle=COL.eye; ctx.beginPath(); ctx.arc(px+t*0.35, py+t*0.40, Math.max(2, t*0.1), 0, Math.PI*2); ctx.fill();
-    ctx.beginPath(); ctx.arc(px+t*0.65, py+t*0.40, Math.max(2, t*0.1), 0, Math.PI*2); ctx.fill();
-  }
-  function drawPixelFood(x,y){
-    const t=TILEPX, px=x*t, py=y*t;
-    const s=Math.max(8, t-10);
-    ctx.fillStyle = '#ff3366';
-    const off=(t-s)/2;
-    ctx.fillRect(px+off, py+off, s, s);
-    ctx.strokeStyle='#ffffff90';
-    ctx.strokeRect(px+off+0.5, py+off+0.5, s-1, s-1);
-  }
-  function drawCandy(x,y){
-    const t=TILEPX, px=x*t, py=y*t;
-    const cx=px+t/2, cy=py+t/2, r=t*0.36;
-    ctx.fillStyle = '#ffd1e6';
-    ctx.beginPath(); ctx.moveTo(px+2, cy); ctx.lineTo(px+6, cy-6); ctx.lineTo(px+6, cy+6); ctx.closePath(); ctx.fill();
-    ctx.beginPath(); ctx.moveTo(px+t-2, cy); ctx.lineTo(px+t-6, cy-6); ctx.lineTo(px+t-6, cy+6); ctx.closePath(); ctx.fill();
-    const grd = ctx.createRadialGradient(cx-2, cy-2, 2, cx, cy, r+2);
-    grd.addColorStop(0, '#ff7fb3'); grd.addColorStop(1, '#ff5fa3');
-    ctx.fillStyle = grd; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#ffffffa8'; ctx.beginPath(); ctx.arc(cx-4, cy-4, r*0.35, 0, Math.PI*2); ctx.fill();
-    ctx.strokeStyle='#ffffffb0'; ctx.lineWidth=1; ctx.beginPath(); ctx.arc(cx, cy, r*0.78, 0, Math.PI*2); ctx.stroke();
-  }
+  function cell(x,y,color,rad=8){ const t=TILEPX, px=x*t, py=y*t; ctx.fillStyle=color; rr(px+1,py+1,t-2,t-2,Math.min(10,t/2)); ctx.fill(); }
+  function head(x,y){ const t=TILEPX, px=x*t, py=y*t; ctx.fillStyle=COL.head; rr(px+1,py+1,t-2,t-2,Math.min(10,t/2)); ctx.fill(); ctx.fillStyle=COL.eye; ctx.beginPath(); ctx.arc(px+t*0.35, py+t*0.40, Math.max(2, t*0.1), 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(px+t*0.65, py+t*0.40, Math.max(2, t*0.1), 0, Math.PI*2); ctx.fill(); }
+  function drawPixelFood(x,y){ const t=TILEPX, px=x*t, py=y*t; const s=Math.max(8, t-10); const off=(t-s)/2; ctx.fillStyle='#ff3366'; ctx.fillRect(px+off,py+off,s,s); ctx.strokeStyle='#ffffff90'; ctx.strokeRect(px+off+0.5,py+off+0.5,s-1,s-1); }
+  function drawCandy(x,y){ const t=TILEPX, px=x*t, py=y*t; const cx=px+t/2, cy=py+t/2, r=t*0.36; ctx.fillStyle='#ffd1e6'; ctx.beginPath(); ctx.moveTo(px+2,cy); ctx.lineTo(px+6,cy-6); ctx.lineTo(px+6,cy+6); ctx.closePath(); ctx.fill(); ctx.beginPath(); ctx.moveTo(px+t-2,cy); ctx.lineTo(px+t-6,cy-6); ctx.lineTo(px+t-6,cy+6); ctx.closePath(); ctx.fill(); const grd=ctx.createRadialGradient(cx-2,cy-2,2,cx,cy,r+2); grd.addColorStop(0,'#ff7fb3'); grd.addColorStop(1,'#ff5fa3'); ctx.fillStyle=grd; ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fill(); ctx.fillStyle='#ffffffa8'; ctx.beginPath(); ctx.arc(cx-4,cy-4,r*0.35,0,Math.PI*2); ctx.fill(); ctx.strokeStyle='#ffffffb0'; ctx.lineWidth=1; ctx.beginPath(); ctx.arc(cx,cy,r*0.78,0,Math.PI*2); ctx.stroke(); }
 
   function draw(){
-    const t=TILEPX;
-    ctx.clearRect(0,0,cv.width,cv.height);
-    ctx.strokeStyle='#ffffff35'; ctx.lineWidth=0.6;
+    const t=TILEPX; ctx.clearRect(0,0,cv.width,cv.height); ctx.strokeStyle='#ffffff35'; ctx.lineWidth=0.6;
     for(let x=0;x<=W;x++){ ctx.beginPath(); ctx.moveTo(x*t+0.5,0); ctx.lineTo(x*t+0.5,H*t); ctx.stroke(); }
     for(let y=0;y<=H;y++){ ctx.beginPath(); ctx.moveTo(0,y*t+0.5); ctx.lineTo(W*t,y*t+0.5); ctx.stroke(); }
-
-    ensureApple();
-    if(apple){ (foodStyle==='pixel' ? drawPixelFood : drawCandy)(apple[0], apple[1]); }
-    if(mail) drawCandy(mail[0], mail[1]);
-
-    for(let i=0;i<snake.length;i++){ const [x,y]=snake[i]; if(i===0) head(x,y); else cell(x,y, COL.body, Math.min(10,t/2)); }
-
-    scoreEl.textContent='分数: '+score;
-    if(over){ msg.textContent='Game Over ～ 撞墙/咬到尾巴了'; msg.style.display='block'; }
-    else if(win){ winEl.style.display='block'; }
-    else { msg.style.display='none'; winEl.style.display='none'; }
+    if(apple){ (foodStyle==='pixel'?drawPixelFood:drawCandy)(apple[0],apple[1]); }
+    for(let i=0;i<snake.length;i++){ const [x,y]=snake[i]; if(i===0) head(x,y); else cell(x,y,'#ff9fbc',Math.min(10,t/2)); }
   }
 
-  initState();
-  tick();
+  initState(); tick();
 })();</script>
 </body>
 </html>
