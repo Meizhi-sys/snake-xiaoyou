@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
-<title>粉粉贪吃蛇·小悠特别版 (v6.20·精简面板+皮肤解锁)</title>
+<title>粉粉贪吃蛇·小悠特别版 (v6.40 完整版)</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#ffd6e6">
 <style>
@@ -46,7 +46,7 @@
   #panelMask::before{ content:''; position:absolute; inset:0; background:rgba(0,0,0,.12); backdrop-filter: blur(2px); }
   #panel{ position:absolute; top:40px; right:6px; background:#fff7fb; border:1px solid #ffd1e2; border-radius:12px; padding:10px;
           box-shadow:0 14px 38px rgba(0,0,0,.12); min-width:320px; max-width:92vw;
-          max-height: calc(var(--vh)*75); overflow:auto;  /* 可滚到底 */
+          max-height: calc(var(--vh)*75); overflow:auto;
           transform: scale(.86); opacity:0; transition: transform .18s ease, opacity .18s ease;
           touch-action: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
           padding-bottom: calc(env(safe-area-inset-bottom) + 120px); }
@@ -242,7 +242,6 @@
   // 固定彩纸与奖励（UI 已删除）
   const confettiCount = 80;
   const confettiDur   = 1200;
-  const rewardMode    = 'points';
   const rewardPoints  = 50;
 
   /* ---------- 皮肤 ---------- */
@@ -305,7 +304,7 @@
     }
   }
   function stopSynth(){ synthOn=false; if(synthCtx){ try{synthCtx.close();}catch{} synthCtx=null; } }
-  function uiToast(t){ msg.textContent=t; msg.style.display='block'; setTimeout(()=>{ msg.style.display='none'; },1200); }
+  function uiToast(t){ msg.textContent=t; msg.style.display='block'; setTimeout(()=>{ msg.style.display='none'); },1200); }
 
   // 顶部按钮状态
   sfxBtn.textContent='音效: '+(sfxOn?'开':'关');
@@ -401,7 +400,7 @@
   /* ---------- 游戏状态与逻辑 ---------- */
   let snake=[], dir=[1,0], queue=[];
   let len=4, speed=startSpeed, score=0, level=1, paused=true, over=false, win=false, overReason='';
-  let apple=null, lastAppleAt=0; let mail=null, mailTTL=0;  // 💌 特殊道具（通关）
+  let apple=null, lastAppleAt=0; let mail=null, mailTTL=0;  // 💌
 
   function vibr(ms){ try{ if('vibrate' in navigator) navigator.vibrate(ms);}catch(e){} }
 
@@ -435,7 +434,7 @@
 
   function showBanner(text){ banner.textContent=text||'➡️ 下一关！'; banner.style.display='block'; setTimeout(()=>{banner.style.display='none';},900); }
 
-  // ★ 新：每过2关自动解锁并自动装备新皮肤
+  // ★ 每过2关自动解锁并自动装备新皮肤
   function unlockNextSkin(autoEquip = true){
     const allKeys = ALL_SKINS.map(s=>s.key);
     const locked  = allKeys.filter(k=>!unlocked.includes(k));
@@ -458,11 +457,11 @@
       hudLevel.textContent='关卡: '+level;
       showBanner('➡️ 第 '+level+' 关！');
       if(speedUp==='off'){ speed=Math.min(14, startSpeed+(level-1)*0.5); hudSpeed.textContent='速度: '+speed.toFixed(1); }
-      if(level % 2 === 0) unlockNextSkin(true); // 每到偶数关解锁皮肤
+      if(level % 2 === 0) unlockNextSkin(true);
     }
   }
 
-  // 彩纸（固定配置）
+  // ✨ 彩纸（固定配置）
   let confettiStart=0, confettiP=[];
   function popConfetti(){
     confettiStart=performance.now(); confettiP=[];
@@ -484,17 +483,38 @@
     if(now-confettiStart<confettiDur) requestAnimationFrame(stepConfetti); else conf.style.display='none'; // 1200ms
   }
 
-  // 💌 特殊道具（吃到直接通关）
+  // 🍭 💌（小礼物）画法 + 直接进入下一关
   function drawCandy(x,y){ const t=TILEPX, px=x*t, py=y*t; const cx=px+t/2, cy=py+t/2, r=t*0.36;
-    const grd=ctx.createRadialGradient(cx-2,cy-2,2,cx,cy,r+2); grd.addColorStop(0,'#ff7fb3'); grd.addColorStop(1,'#ff5fa3');
     ctx.fillStyle='#ffd1e6';
     ctx.beginPath(); ctx.moveTo(px+2,cy); ctx.lineTo(px+6,cy-6); ctx.lineTo(px+6,cy+6); ctx.closePath(); ctx.fill();
     ctx.beginPath(); ctx.moveTo(px+t-2,cy); ctx.lineTo(px+t-6,cy-6); ctx.lineTo(px+t-6,cy+6); ctx.closePath(); ctx.fill();
-    ctx.fillStyle=grd; ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fill();
+    const grd=ctx.createRadialGradient(cx-2,cy-2,2,cx,cy,r+2); grd.addColorStop(0,'#ff7fb3'); grd.addColorStop(1,'#ff5fa3'); ctx.fillStyle=grd;
+    ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fill();
   }
 
-  function rewardWin(){
-    // 固定奖励分 +50
+  function advanceLevel(){
+    // 升关
+    level++;
+    hudLevel.textContent = '关卡: ' + level;
+    showBanner('➡️ 第 ' + level + ' 关！');
+
+    if (speedUp === 'off') {
+      speed = Math.min(14, startSpeed + (level - 1) * 0.5);
+      hudSpeed.textContent = '速度: ' + speed.toFixed(1);
+    }
+    if (level % 2 === 0) unlockNextSkin(true);
+
+    // 中心重置
+    const cx = Math.floor(W/2), cy = Math.floor(H/2);
+    snake = [[cx, cy]];
+    len = 4; dir = [1,0]; queue = [];
+    over = false; win = false;
+    apple = null; ensureApple();
+    mail = null; mailTTL = 0;
+    popConfetti();
+  }
+
+  function rewardWin(){ // 备用：整局通关奖励（目前不用）
     score+=rewardPoints; hudScore.textContent='分数: '+score+' (+'+rewardPoints+')';
     showBanner('🎉 奖励 +'+rewardPoints);
     winEl.style.display='block';
@@ -538,6 +558,7 @@
             placeAppleNew(true);
             hudScore.textContent='分数: '+score;
             hudSpeed.textContent='速度: '+speed.toFixed(1);
+            // 随几率刷出 💌
             if(!mail && Math.random()<0.06){
               const occ=new Set(snake.map(JSON.stringify));
               mail = spawnAppleAvoidingSnake(occ); mailTTL=500;
@@ -546,8 +567,13 @@
           }
 
           if(mail){
-            if(head[0]===mail[0] && head[1]===mail[1]){ win=true; rewardWin(); }
-            if(--mailTTL<=0){ mail=null; }
+            if(head[0]===mail[0] && head[1]===mail[1]){
+              score += 20; hudScore.textContent = '分数: ' + score + ' (+20)';
+              mail = null;
+              advanceLevel(); // ★ 立刻进入下一关
+            } else if (--mailTTL <= 0){
+              mail = null;
+            }
           }
         }
       }
@@ -570,8 +596,8 @@
     for(let y=0;y<=H;y++){ ctx.beginPath(); ctx.moveTo(0,y*t+0.5); ctx.lineTo(W*t,y*t+0.5); ctx.stroke(); }
 
     if(!apple) ensureApple();
-    if(apple){ (foodStyle==='pixel'?drawPixelFood:drawCandy)(apple[0],apple[1]); } // pixel 或 candy
-    if(mail) drawCandy(mail[0],mail[1]); // 💌
+    if(apple){ (foodStyle==='pixel'?drawPixelFood:drawCandy)(apple[0],apple[1]); }
+    if(mail) drawCandy(mail[0],mail[1]);
 
     for(let i=0;i<snake.length;i++){ const [x,y]=snake[i]; if(i===0) headCell(x,y); else bodyCell(x,y); }
 
@@ -582,7 +608,7 @@
   /* ---------- 启动 & BGM 解锁 ---------- */
   function startGame(){ startMask.style.display='none'; paused=false; }
   startBtn.addEventListener('click', async ()=>{
-    try{ await tryPlayBGM(); bgmTried=true; }catch(e){ uiToast('若无音乐，请检查静音拨片或音量～'); }
+    try{ await tryPlayBGM(); bgmTried=true; }catch(e){ /* 可能被静音拨片拦截，用户再交互会恢复 */ }
     startGame();
   });
   window.addEventListener('touchstart', ()=>{ if(!bgmTried){ tryPlayBGM().then(()=>bgmTried=true); } }, { once:true });
