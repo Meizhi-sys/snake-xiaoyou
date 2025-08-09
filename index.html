@@ -3,10 +3,9 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
-<title>粉粉贪吃蛇·小悠特别版 (v6.16 修正版)</title>
+<title>粉粉贪吃蛇·小悠特别版 (v6.16·BGM整合)</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#ffd6e6">
-<link rel="apple-touch-icon" href="icon-512.png">
 <style>
   :root{ --vh:1vh; --controlsH:45; --controlsLift:44; --actionsPadRight:30; --gap:12px; --gutterX:8px; }
   html,body{ margin:0; height:calc(var(--vh)*100); overflow:hidden; background:#ffd6e6; color:#5a4750; font-family:-apple-system,system-ui,Segoe UI,Roboto,Helvetica,Arial; overscroll-behavior:none; touch-action:none;}
@@ -46,14 +45,15 @@
   #panelMask::before{ content:''; position:absolute; inset:0; background:rgba(0,0,0,.12); backdrop-filter: blur(2px); }
   #panel{ position:absolute; top:40px; right:6px; background:#fff7fb; border:1px solid #ffd1e2; border-radius:12px; padding:10px;
           box-shadow:0 14px 38px rgba(0,0,0,.12); min-width:320px; max-width:92vw;
-          max-height: calc(var(--vh)*72); overflow:auto;  /* ↑ 更高可视 + 可滚到底 */
+          max-height: calc(var(--vh)*75); overflow:auto;  /* 可滚到底 */
           transform: scale(.86); opacity:0; transition: transform .18s ease, opacity .18s ease;
-          touch-action: pan-y; -webkit-overflow-scrolling: touch; } /* iOS 滚动优化 */
+          touch-action: pan-y; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
+          padding-bottom: calc(env(safe-area-inset-bottom) + 80px); } /* 预留空间让底部按钮可点 */
   #panelMask.show #panel{ transform: scale(1); opacity:1; }
   #panel label{ font-size:12px; display:block; margin:6px 0 2px; }
   #panel input[type=range], #panel select{ width:260px; max-width:70vw; }
   #panel .row{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
-  #panel .sticky{ position:sticky; bottom:0; background:#fff7fb; padding-top:6px; }
+  #panel .sticky{ position:sticky; bottom:0; background:#fff7fb; padding-top:6px; z-index:1; }
   #skins{ display:flex; gap:8px; flex-wrap:wrap; }
   .skin{ padding:6px 10px; border-radius:10px; border:1px solid #ffd1e2; background:#fff; cursor:pointer; }
   .skin.locked{ opacity:.5; filter:grayscale(1); }
@@ -90,6 +90,7 @@
         <button class="chip" id="bgmToggle">音乐: 开</button>
       </div>
 
+      <!-- 设置面板 -->
       <div id="panelMask">
         <div id="panel">
           <label>按键区高度（% 屏幕，0–100）：<span id="ctlVal">45</span>%</label>
@@ -202,7 +203,7 @@
   </div>
 </div>
 
-<!-- 背景音乐：iOS 需点击触发，这里放元素 + JS 控制 -->
+<!-- 背景音乐：优先播放 friendship.mp3；失败则启用 WebAudio 8-bit 备胎 -->
 <audio id="bgm" src="friendship.mp3" preload="auto" loop playsinline></audio>
 
 <script>
@@ -225,8 +226,7 @@
   const conf=document.getElementById('confetti'), cctx=conf.getContext('2d');
   const hudScore=document.getElementById('score'), hudLevel=document.getElementById('level'), hudSpeed=document.getElementById('speed');
   const msg=document.getElementById('msg'), banner=document.getElementById('banner'), winEl=document.getElementById('win');
-  const panelMask=document.getElementById('panelMask'), panel=document.getElementById('panel');
-  const skinsWrap=document.getElementById('skins');
+  const panelMask=document.getElementById('panelMask'), panel=document.getElementById('panel'); const skinsWrap=document.getElementById('skins');
 
   const ctlRange=document.getElementById('ctlRange'), ctlVal=document.getElementById('ctlVal');
   const liftRange=document.getElementById('liftRange'), liftVal=document.getElementById('liftVal');
@@ -286,7 +286,8 @@
   ];
   let unlocked = (saved&&saved.unlocked)||['classic'];
   let skinKey = (saved&&saved.skinKey)||'classic';
-
+  const COL={grid:'#ffffff35', head:'#ff6fa5', body:'#ff9fbc', eye:'#4c2d3a'};
+  function applyPalette(){ const s=ALL_SKINS.find(k=>k.key===skinKey)||ALL_SKINS[0]; COL.head=s.head; COL.body=s.body; }
   function renderSkins(){
     skinsWrap.innerHTML='';
     ALL_SKINS.forEach(s=>{
@@ -297,55 +298,55 @@
       skinsWrap.appendChild(el);
     });
   }
-
-  const COL={grid:'#ffffff35', head:'#ff6fa5', body:'#ff9fbc', eye:'#4c2d3a'};
-  function applyPalette(){
-    const s=ALL_SKINS.find(k=>k.key===skinKey)||ALL_SKINS[0];
-    COL.head=s.head; COL.body=s.body;
-  }
   renderSkins(); applyPalette();
 
-  /* ===== 背景音乐：强力解锁策略（支持 iOS） ===== */
-  let bgmTried=false;
-  bgmEl.volume=0.7; // 提高一点音量
-  function tryPlayBGM(){
-    if(!bgmOn) return Promise.resolve();
-    bgmEl.currentTime = 0;
-    const p = bgmEl.play();
-    if(p && typeof p.then==='function'){
-      return p.catch(()=>{
-        return new Promise(resolve=>{
-          const oneMore=()=>{ bgmEl.play().finally(resolve);
-            document.removeEventListener('touchend', oneMore);
-            document.removeEventListener('click', oneMore);
-          };
-          document.addEventListener('touchend', oneMore, {once:true});
-          document.addEventListener('click',    oneMore, {once:true});
-        });
-      });
+  /* ===== BGM：优先播放 friendship.mp3；失败则启用 WebAudio 8-bit 备胎 ===== */
+  let bgmTried=false, synthCtx=null, synthOn=false;
+  bgmEl.volume=0.7;
+  async function tryPlayBGM(){
+    if(!bgmOn) return;
+    // 先试mp3
+    try{
+      await bgmEl.play();
+      return;
+    }catch(e){
+      // 启动合成器
+      if(!synthCtx){
+        synthCtx = new (window.AudioContext||window.webkitAudioContext)();
+        const bpm=128, step=60/bpm/2; // 8分音符
+        const scale=[0,2,4,7,9,12,14,16]; // 大调小旋律
+        let t = synthCtx.currentTime + 0.05;
+        function note(time, midi, dur=step){
+          const o=synthCtx.createOscillator(), g=synthCtx.createGain();
+          o.type='square'; o.frequency.value=440*Math.pow(2,(midi-69)/12);
+          g.gain.setValueAtTime(0.12, time);
+          g.gain.exponentialRampToValueAtTime(0.001, time+dur*0.95);
+          o.connect(g).connect(synthCtx.destination);
+          o.start(time); o.stop(time+dur);
+        }
+        function loop(){
+          if(!synthOn) return;
+          for(let i=0;i<16;i++){
+            const deg = scale[(i*2)%scale.length];
+            const midi = 72 + deg + (i%8===0?12:0); // 偶尔高八度点缀
+            note(t+i*step, midi, step*0.95);
+          }
+          t += 16*step;
+          setTimeout(loop, 1000*16*step*0.9);
+        }
+        synthOn=true; loop();
+      }
+      if(synthCtx && synthCtx.state==='suspended'){ try{ await synthCtx.resume(); }catch(e2){} }
     }
-    return Promise.resolve();
   }
-  function uiToast(t){
-    const m=document.getElementById('msg');
-    m.textContent=t; m.style.display='block';
-    setTimeout(()=>{ if(!over && !win) m.style.display='none'; },1200);
-  }
-  startBtn.addEventListener('click', async ()=>{
-    try{ await tryPlayBGM(); bgmTried=true; }catch(e){ uiToast('若无音乐，请检查静音拨片或音量～'); }
-    startMask.style.display='none';
-    paused=false;
-  });
-  // 兜底：首次触摸/点击也尝试一次
-  window.addEventListener('touchstart', ()=>{ if(!bgmTried){ tryPlayBGM().then(()=>bgmTried=true); } }, {once:true});
-  window.addEventListener('mousedown',  ()=>{ if(!bgmTried){ tryPlayBGM().then(()=>bgmTried=true); } }, {once:true});
+  function stopSynth(){ synthOn=false; if(synthCtx){ try{synthCtx.close();}catch{} synthCtx=null; } }
 
-  // 顶部按钮
-  const sfxBtn=document.getElementById('sfx');
-  const bgmBtn=document.getElementById('bgmToggle');
-  sfxBtn.textContent='音效: '+(sfxOn?'开':'关');
-  bgmBtn.textContent='音乐: '+(bgmOn?'开':'关');
-  bgmBtn.onclick=()=>{ bgmOn=!bgmOn; bgmBtn.textContent='音乐: '+(bgmOn?'开':'关'); saveSettings(); if(bgmOn) tryPlayBGM(); else bgmEl.pause(); };
+  function uiToast(t){ const m=document.getElementById('msg'); m.textContent=t; m.style.display='block'; setTimeout(()=>{ if(!over && !win) m.style.display='none'; },1200); }
+
+  const sfxBtn=document.getElementById('sfx'); const bgmBtn=document.getElementById('bgmToggle');
+  let sfxOn=!(saved&&saved.sfxOn===false); let bgmState=(saved&&saved.bgmOn!==false);
+  sfxBtn.textContent='音效: '+(sfxOn?'开':'关'); bgmBtn.textContent='音乐: '+(bgmState?'开':'关');
+  bgmBtn.onclick=()=>{ bgmState=!bgmState; bgmOn=bgmState; bgmBtn.textContent='音乐: '+(bgmOn?'开':'关'); saveSettings(); if(bgmOn){ tryPlayBGM(); } else { bgmEl.pause(); stopSynth(); } };
   sfxBtn.onclick=()=>{ sfxOn=!sfxOn; sfxBtn.textContent='音效: '+(sfxOn?'开':'关'); saveSettings(); };
 
   // 面板开关
@@ -366,6 +367,7 @@
     unlocked=['classic']; skinKey='classic'; renderSkins(); applySettings(true);
     tryPlayBGM();
   };
+
   ctlRange.oninput=()=>{ ctlVal.textContent=ctlRange.value; setVar('--controlsH', ctlRange.value); };
   liftRange.oninput=()=>{ liftVal.textContent=liftRange.value; setVar('--controlsLift', liftRange.value); };
   padRange.oninput=()=>{ padVal.textContent=padRange.value; setVar('--actionsPadRight', padRange.value); };
@@ -603,7 +605,18 @@
     else if(!win){ msg.style.display='none'; }
   }
 
-  initState(); tick();
+  // 启动
+  initState();
+  // 点击开始后：尝试播放BGM（mp3 或合成器），并开始游戏
+  startBtn.addEventListener('click', async ()=>{
+    try { await tryPlayBGM(); bgmTried=true; } catch(e){ uiToast('若无音乐，请检查静音拨片或音量～'); }
+    startMask.style.display='none'; paused=false; // 开始游戏
+  });
+  // 兜底：首次触摸/点击也尝试一次
+  window.addEventListener('touchstart', ()=>{ if(!bgmTried){ tryPlayBGM().then(()=>bgmTried=true); } }, { once:true });
+  window.addEventListener('mousedown',  ()=>{ if(!bgmTried){ tryPlayBGM().then(()=>bgmTried=true); } }, { once:true });
+
+  tick();
 })();
 </script>
 </body>
